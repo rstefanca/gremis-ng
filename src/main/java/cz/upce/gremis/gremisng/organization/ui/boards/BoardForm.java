@@ -52,7 +52,7 @@ class BoardForm extends FormLayout {
         minMemberCount.setStep(1);
 
         var options = new CheckboxGroup<BoardOption>();
-        options.setEnabled(false);
+
         options.setLabel("Moznosti");
         options.setItems(BoardOption.values());
         options.addThemeVariants(CheckboxGroupVariant.LUMO_VERTICAL);

@@ -1,7 +1,6 @@
 package cz.upce.gremis.gremisng.organization.ui.boards;
 
 import com.vaadin.flow.component.ComponentEventListener;
-import com.vaadin.flow.component.HasComponents;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
@@ -50,6 +49,8 @@ import cz.upce.gremis.gremisng.organization.ui.committees.CommitteeDialog;
 import cz.upce.gremis.gremisng.ui.MainLayout;
 import cz.upce.gremis.gremisng.ui.components.AssignmentDialog;
 import cz.upce.gremis.gremisng.ui.components.ConfirmDeleteDialog;
+import cz.upce.gremis.gremisng.ui.components.RendererTemplates;
+import cz.upce.gremis.gremisng.ui.components.UiTips;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -459,7 +460,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
                 });
 
 
-                addTip(layout);
+                UiTips.addTip(layout, "Pořadí funkcí lze změnit přetažením");
                 layout.add(seatGrid);
                 add(layout);
 
@@ -473,16 +474,6 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
             });
         }
 
-        private void addTip(HasComponents parent) {
-            var icon = new Icon(VaadinIcon.LIGHTBULB);
-            icon.addClassNames(LumoUtility.IconSize.SMALL, LumoUtility.TextColor.TERTIARY);
-            var text = new Span("Pořadí funkcí lze změnit přetažením");
-            text.addClassNames(LumoUtility.Margin.Left.SMALL, LumoUtility.TextColor.TERTIARY);
-            var div = new Div(
-                    icon,
-                    text);
-            parent.add(div);
-        }
     }
 
     private void saveCommittee(Committee committee) {
@@ -603,11 +594,11 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
                 grid.addColumn(BoardSeatAssignment::getEnd).setHeader("Ve funkci do");
 
                 grid.addColumn(
-                        new ComponentRenderer<>(Button::new, (button, person) -> {
+                        new ComponentRenderer<>(Button::new, (button, assignment) -> {
                             button.addThemeVariants(ButtonVariant.LUMO_ICON,
                                     ButtonVariant.LUMO_ERROR,
                                     ButtonVariant.LUMO_TERTIARY);
-                            button.addClickListener(clickEvent -> this.removeAssignments(person));
+                            button.addClickListener(clickEvent -> this.removeAssignments(assignment));
                             button.setIcon(new Icon(VaadinIcon.TRASH));
                         })).setWidth("6em").setFlexGrow(0).setTextAlign(ColumnTextAlign.END);
 
@@ -616,7 +607,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
                 lazyDataView = grid.setItems(q -> {
                     var termId = termSelector.getValue().getId();
                     // TODO - return dto (flat?) instead of entity
-                    var page = assignmentService.findByTerm_Id(termId, VaadinSpringDataHelpers.toSpringPageRequest(q));
+                    var page = assignmentService.findByTermId(termId, VaadinSpringDataHelpers.toSpringPageRequest(q));
                     firstColumn.setFooter(String.format("%s osob", page.getTotalElements()));
                     return page.stream();
                 });

@@ -13,9 +13,12 @@ public record CommitteeListItemView(
 
         int durationInMonths,
 
-        int order,
 
-        String boardId,
 
-        String boardName) {
+        Long boardId,
+
+        String boardName,
+
+        boolean active) {
+
 }

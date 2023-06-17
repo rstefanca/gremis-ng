@@ -16,7 +16,7 @@ public class BoardTermForm extends FormLayout {
     private DatePicker from = new DatePicker("Začátek");
     private DatePicker to = new DatePicker("Konec");
 
-    private BoardTerm item;
+    private BoardTerm item = new BoardTerm();
 
     public BoardTermForm() {
 

@@ -5,8 +5,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-@Entity
+import java.util.ArrayList;
+import java.util.Collection;
 
+@Entity
 @Table(name = "COMMITTEE_TEMPLATE")
 @EntityListeners({CommitteeListener.class})
 public class Committee extends AbstractEntity {
@@ -45,14 +47,12 @@ public class Committee extends AbstractEntity {
 
     //@formatter:on
 
-    /*@OneToMany(
+    @OneToMany(
             mappedBy = "committee",
             cascade = {CascadeType.ALL},
             orphanRemoval = true,
             fetch = FetchType.LAZY)
-    private @Getter Collection<CommitteeSeat> seats = new ArrayList<>();*/
-
-
+    private @Getter Collection<CommitteeSeat> seats = new ArrayList<>();
 
 
     public Committee() {

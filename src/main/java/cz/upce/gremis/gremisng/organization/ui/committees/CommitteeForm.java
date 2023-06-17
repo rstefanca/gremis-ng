@@ -73,6 +73,9 @@ public class CommitteeForm extends FormLayout {
                 .asRequired()
                 .withConverter(Double::intValue, Double::valueOf)
                 .bind(Committee::getMinimumSeats, Committee::setMinimumSeats);
+
+        binder.forField(workingGroupsEnabled)
+                .bind(Committee::isWorkingGroupsEnabled, Committee::setWorkingGroupsEnabled);
     }
 
     void validateAndSave() {

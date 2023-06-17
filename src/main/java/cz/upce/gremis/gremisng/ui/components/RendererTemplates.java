@@ -1,4 +1,4 @@
-package cz.upce.gremis.gremisng.organization.ui.boards;
+package cz.upce.gremis.gremisng.ui.components;
 
 import com.vaadin.flow.data.renderer.LitRenderer;
 import com.vaadin.flow.data.renderer.Renderer;
@@ -7,7 +7,7 @@ import cz.upce.gremis.gremisng.organization.domain.BoardListItemView;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-class RendererTemplates {
+public class RendererTemplates {
 
     public static final String NAME_AND_ABBREVIATION_TEMPLATE = "<vaadin-horizontal-layout style=\"align-items: center;\" theme=\"spacing\">"
             + "  <vaadin-vertical-layout style=\"line-height: var(--lumo-line-height-m);\">"

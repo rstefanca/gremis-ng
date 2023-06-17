@@ -15,8 +15,6 @@ public class BoardSeatAssignment extends AbstractAssignment implements Persistab
     @SuppressWarnings("unused")
     //private final @Embedded AuditAttributes auditAttributes = new AuditAttributes();
 
-    @Transient
-    private boolean isNew = false;
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "boardSeatAssignment_gen")
@@ -40,8 +38,4 @@ public class BoardSeatAssignment extends AbstractAssignment implements Persistab
         return id;
     }
 
-    @Override
-    public boolean isNew() {
-        return isNew;
-    }
 }

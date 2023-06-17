@@ -29,25 +29,22 @@ import java.util.List;
 public class AssignmentDialog extends Dialog {
 
     private final BoardSeatAssignmentService service;
-    private final PersonRepository personRepository;
 
     private final Binder<BoardSeatAssignment> binder = new Binder<>(BoardSeatAssignment.class);
 
     private BoardSeat selectedSeat;
 
-    private ComboBox<BoardSeat> seatCombo = new ComboBox<>("Funkce");
-    private ComboBox<BoardTerm> termCombo = new ComboBox<>("Funkční období");
+    private final ComboBox<BoardSeat> seatCombo = new ComboBox<>("Funkce");
+    private final ComboBox<BoardTerm> termCombo = new ComboBox<>("Funkční období");
 
-    private ComboBox<Person> personCombo = new ComboBox<>("Osoba");
+    private final ComboBox<Person> personCombo = new ComboBox<>("Osoba");
 
-    DatePicker from = new DatePicker("Od");
-    DatePicker to = new DatePicker("Do");
+    private final DatePicker from = new DatePicker("Od");
+    private final DatePicker to = new DatePicker("Do");
 
 
     public AssignmentDialog(BoardSeatAssignmentService service, PersonRepository personRepository) {
         this.service = service;
-        this.personRepository = personRepository;
-
 
         seatCombo.setItemLabelGenerator(BoardSeat::getName);
         termCombo.setItemLabelGenerator(BoardTerm::getDescription);

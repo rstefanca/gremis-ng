@@ -5,6 +5,7 @@ import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.dataview.ComboBoxLazyDataView;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -21,16 +22,16 @@ import cz.upce.gremis.gremisng.organization.domain.BoardId;
 import cz.upce.gremis.gremisng.organization.domain.BoardTermRepository;
 import cz.upce.gremis.gremisng.organization.domain.CommitteeTerm;
 import cz.upce.gremis.gremisng.organization.domain.TermDto;
+import cz.upce.gremis.gremisng.time.BusinessTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import java.time.LocalDate;
 import java.util.stream.Stream;
 
 @SpringComponent
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class CommitteeTermDialog extends Dialog {
+class CommitteeTermDialog extends Dialog {
 
     private static final String BOARD_TERM_COMBO_TEMPLATE =
             """
@@ -43,7 +44,9 @@ public class CommitteeTermDialog extends Dialog {
 
     private final Binder<CommitteeTerm> binder = new Binder<>(CommitteeTerm.class);
 
-    private final ComboBox<TermComboItem> boardTerm = new ComboBox<>("Funkční období grémia");
+    private final ComboBox<TermDto> boardTerm = new ComboBox<>("Funkční období grémia");
+
+    private final BusinessTime businessTime;
 
     private final TextField name = new TextField("Název");
 
@@ -51,20 +54,23 @@ public class CommitteeTermDialog extends Dialog {
 
     private final DatePicker to = new DatePicker("Konec");
 
+    private final ComboBoxLazyDataView<TermDto> dataView;
+
     private CommitteeTerm committeeTerm;
 
     private BoardId boardId;
 
-    private TermsDataProvider dataProvider;
 
-    public CommitteeTermDialog(BoardTermRepository boardTermRepository) {
-        dataProvider = new TermsDataProvider(boardTermRepository);
-
+    public CommitteeTermDialog(BoardTermRepository boardTermRepository, BusinessTime businessTime) {
+        this.businessTime = businessTime;
         configureForm();
         configureButtons();
         configureBinder();
 
-        boardTerm.setItems(dataProvider);
+        var dataProvider = new TermsDataProvider(boardTermRepository);
+        //TODO check public <C> ComboBoxLazyDataView<TItem> setItemsWithFilterConverter(
+        dataView = boardTerm.setItems(dataProvider);
+        dataView.setIdentifierProvider(TermDto::id);
     }
 
     private void configureForm() {
@@ -79,37 +85,42 @@ public class CommitteeTermDialog extends Dialog {
         layout.add(from, to);
 
         boardTerm.setRenderer(createBoardTermRenderer());
-        boardTerm.setItemLabelGenerator(TermComboItem::description);
+        boardTerm.setItemLabelGenerator(TermDto::description);
         boardTerm.addValueChangeListener(e -> {
-           if (from.getValue() == null && to.getValue() == null) {
-               var selected = e.getValue();
-               from.setValue(selected.start);
-               to.setValue(selected.end);
-           }
+            if (from.getValue() == null && to.getValue() == null) {
+                var selected = e.getValue();
+                from.setValue(selected.start());
+                to.setValue(selected.end());
+            }
         });
 
+        name.setClearButtonVisible(true);
+
         add(layout);
+
+        addCloseListener(e -> reset());
     }
 
-    private Renderer<TermComboItem> createBoardTermRenderer() {
-        return LitRenderer.<TermComboItem>of(BOARD_TERM_COMBO_TEMPLATE)
-                .withProperty("description", TermComboItem::description)
+    private Renderer<TermDto> createBoardTermRenderer() {
+        return LitRenderer.<TermDto>of(BOARD_TERM_COMBO_TEMPLATE)
+                .withProperty("description", TermDto::description)
                 .withProperty("from", termDto -> termDto.start().toString())
                 .withProperty("to", termDto1 -> termDto1.end().toString());
     }
 
     private void configureButtons() {
+        var saveButton = new Button(
+                getTranslation("buttons.save"),
+                click -> validateAndSave());
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        saveButton.getStyle().set("margin-right", "auto");
+
         var cancelButton = new Button(
                 getTranslation("buttons.cancel"),
                 click -> fireEvent(new CancelEvent(this, null)));
 
-        var saveButton = new Button(
-                getTranslation("buttons.save"),
-                click -> validateAndSave());
 
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        getFooter().add(cancelButton, saveButton);
+        getFooter().add(saveButton, cancelButton);
     }
 
     private void validateAndSave() {
@@ -121,9 +132,12 @@ public class CommitteeTermDialog extends Dialog {
     private void configureBinder() {
         binder.forField(boardTerm)
                 .asRequired()
-                .withConverter(TermComboItem::id, boardTermId -> {
+                .withConverter(TermDto::id, boardTermId -> {
                     if (boardTermId != null) {
-                        return new TermComboItem(boardTermId);
+                        return dataView.getItems()
+                                .filter(it -> it.id().equals(boardTermId))
+                                .findFirst()
+                                .orElse(null);
                     }
                     return null;
                 })
@@ -133,14 +147,35 @@ public class CommitteeTermDialog extends Dialog {
                 .asRequired()
                 .bind(CommitteeTerm::getName, CommitteeTerm::setName);
 
-        binder.forField(from)
+        var fromBinder = binder.forField(from)
                 .asRequired()
+                .withValidator(date -> !isIntervalSet() || date.isBefore(to.getValue()),
+                        "Neplatny začátek období"
+                )
+                .withValidator(date -> !date.isBefore(getSelectedBoardTerm().getStart()), "check start")
                 .bind(CommitteeTerm::getStart, CommitteeTerm::setStart);
 
-        binder.forField(to)
+
+        var toBinder = binder.forField(to)
                 .asRequired()
+                .withValidator(toDate -> isIntervalSet() && toDate.isAfter(from.getValue()),
+                        "Neplatný konec období"
+                )
+                .withValidator(date -> !date.isAfter(getSelectedBoardTerm().end()), "check end")
                 .bind(CommitteeTerm::getEnd, CommitteeTerm::setEnd);
 
+        boardTerm.addValueChangeListener(e -> {
+            fromBinder.validate();
+            toBinder.validate();
+        });
+    }
+
+    private boolean isIntervalSet() {
+        return from.getValue() != null && to.getValue() != null;
+    }
+
+    private TermDto getSelectedBoardTerm() {
+        return boardTerm.getValue();
     }
 
     void setItem(CommitteeTerm committeeTerm) {
@@ -152,6 +187,10 @@ public class CommitteeTermDialog extends Dialog {
         this.boardId = boardId;
     }
 
+    private void reset() {
+        boardTerm.setValue(null);
+    }
+
     public Registration addSaveListener(ComponentEventListener<SaveEvent> listener) {
         return addListener(SaveEvent.class, listener);
     }
@@ -161,65 +200,23 @@ public class CommitteeTermDialog extends Dialog {
     }
 
     @RequiredArgsConstructor
-    private class TermsDataProvider implements CallbackDataProvider.FetchCallback<TermComboItem, String> {
+    private class TermsDataProvider implements CallbackDataProvider.FetchCallback<TermDto, String> {
 
         private final BoardTermRepository repository;
 
         @Override
-        public Stream<TermComboItem> fetch(Query<TermComboItem, String> query) {
+        public Stream<TermDto> fetch(Query<TermDto, String> query) {
             var pageRequest = VaadinSpringDataHelpers.toSpringPageRequest(query);
             var page = repository.pageTerms(boardId.value(), pageRequest);
-            return page.stream().map(TermComboItem::new);
-        }
-    }
-
-    /**
-     * Helps binder to select item without calling database. Only compares ids.
-     */
-    @RequiredArgsConstructor
-    private static class TermComboItem {
-
-       private final Long id;
-       private final String description;
-       private final LocalDate start;
-       private final LocalDate end;
-
-       public TermComboItem(TermDto dto) {
-           id = dto.id();
-           description = dto.description();
-           start = dto.start();
-           end = dto.end();
-       }
-
-       public TermComboItem(Long id) {
-           this.id = id;
-           description = null;
-           start = null;
-           end = null;
-       }
-
-        public Long id() {
-            return id;
-        }
-
-        public String description() {
-            return description;
-        }
-
-        public LocalDate start() {
-            return start;
-        }
-
-        public LocalDate end() {
-            return end;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-           if (obj == null) {
-               return false;
-           }
-            return this.id().equals(((TermComboItem)obj).id());
+            return page.stream()
+                    .peek(dto -> {
+                        var value = boardTerm.getValue();
+                        if (value == null) {
+                            var now = businessTime.getDate();
+                            dto.containsDate(now);
+                            boardTerm.setValue(dto);
+                        }
+                    });
         }
     }
 
@@ -250,6 +247,4 @@ public class CommitteeTermDialog extends Dialog {
             super(source, term);
         }
     }
-
-
 }

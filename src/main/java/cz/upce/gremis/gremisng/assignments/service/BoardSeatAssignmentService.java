@@ -24,9 +24,6 @@ public class BoardSeatAssignmentService {
         this.repository = repository;
     }
 
-    BoardSeatAssignment create(NewAssignment newAssignment) {
-        throw new UnsupportedOperationException("WIP");
-    }
 
     @Transactional
     public BoardSeatAssignment create(BoardSeat seat, BoardTerm term, Person person, LocalDate start, LocalDate end, String note) {
@@ -37,6 +34,7 @@ public class BoardSeatAssignmentService {
                 .setPerson(person)
                 .setStart(start)
                 .setEnd(end)
+                .setName("why")
                 .setNote(note);
 
         return repository.save(assignment);
@@ -58,7 +56,7 @@ public class BoardSeatAssignmentService {
     }
 
     @Transactional(readOnly = true)
-    public Page<BoardSeatAssignment> findByTerm_Id(Long termId, Pageable pageable) {
+    public Page<BoardSeatAssignment> findByTermId(Long termId, Pageable pageable) {
         return repository.findByTerm_Id(termId, pageable);
     }
 

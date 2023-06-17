@@ -18,17 +18,18 @@ public class CommitteeDialog extends Dialog {
     }
 
     private void configureButtons() {
+        var saveButton = new Button(
+                getTranslation("buttons.save"),
+                click -> committeeForm.validateAndSave());
+
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        saveButton.getStyle().set("margin-right", "auto");
+
         var cancelButton = new Button(
                 getTranslation("buttons.cancel"),
                 click -> committeeForm.cancel());
 
-
-        var saveButton = new Button(
-                getTranslation("buttons.save"),
-                click -> committeeForm.validateAndSave());
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        getFooter().add(cancelButton, saveButton);
+        getFooter().add(saveButton, cancelButton);
     }
 
     public CommitteeForm getForm() {

@@ -13,9 +13,10 @@ import java.time.LocalDate;
 @MappedSuperclass
 public abstract class AbstractAssignment extends AbstractEntity {
 
-    private @NonNull
     @Getter
-    @Setter String name;
+    @Setter
+    @Column(name = "name", nullable = false)
+    private @NonNull String name;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PERSON_ID", updatable = false, nullable = false)

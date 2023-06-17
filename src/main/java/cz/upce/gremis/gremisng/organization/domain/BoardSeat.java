@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "BOARD_SEAT")
-public class BoardSeat extends AbstractEntity {
+public class BoardSeat extends AbstractSeat {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "board_seat_gen")
@@ -19,21 +19,7 @@ public class BoardSeat extends AbstractEntity {
     private @Getter
     @Setter Board board;
 
-    @Getter
-    @Setter
-    private String name;
-
     @Column(name = "TERM_DURATION")
     private @Getter
     @Setter Integer duration;
-
-    @Embedded
-    @Getter
-    @Setter
-    private SeatSettings settings = new SeatSettings();
-
-    @Column(name = "PRIORITY_ORDER")
-    private @Getter
-    @Setter int order = 1;
-
 }

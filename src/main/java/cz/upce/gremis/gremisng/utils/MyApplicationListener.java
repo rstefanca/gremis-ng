@@ -57,9 +57,9 @@ class MyApplicationListener
                 .setEnd(LocalDate.of(2025, 1, 12));
         board.add(term2);
 
-        var seat = new BoardSeat()
+        var seat = new BoardSeat();
+        seat.setDuration(36)
                 .setName("Senátor")
-                .setDuration(36)
                 .setSettings(new SeatSettings()
                         .setFilling(Filling.MANDATORY)
                         .setAssignmentType(AssignmentType.MULTIPLE_PERSONS)
@@ -76,6 +76,7 @@ class MyApplicationListener
                 .setMandatory(true);
 
         committee.setBoard(board);
+        committee.setWorkingGroupsEnabled(true);
 
 
         boardAggregateService.save(board);

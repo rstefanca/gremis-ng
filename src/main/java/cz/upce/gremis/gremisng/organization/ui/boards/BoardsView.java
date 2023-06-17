@@ -1,6 +1,5 @@
 package cz.upce.gremis.gremisng.organization.ui.boards;
 
-import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.contextmenu.GridContextMenu;
@@ -27,7 +26,7 @@ import com.vaadin.flow.router.Route;
 import cz.upce.gremis.gremisng.organization.domain.BoardListItemView;
 import cz.upce.gremis.gremisng.ui.MainLayout;
 
-import static cz.upce.gremis.gremisng.organization.ui.boards.RendererTemplates.NAME_AND_ABBREVIATION_TEMPLATE;
+import static cz.upce.gremis.gremisng.ui.components.RendererTemplates.NAME_AND_ABBREVIATION_TEMPLATE;
 import static cz.upce.gremis.gremisng.ui.components.SpanHelpers.setupStateSpan;
 
 @Route(value = "/boards", layout = MainLayout.class)
@@ -56,9 +55,9 @@ public class BoardsView extends VerticalLayout {
         menuDiv.setWidthFull();
         var top = new HorizontalLayout(searchField, menuDiv);
         top.setWidthFull();
-        var addPersonMenuItem = menu.addItem(new Icon(VaadinIcon.PLUS));
-        addPersonMenuItem.add("Nove gremium");
-        addPersonMenuItem.addClickListener(e -> {
+        var addBoard = menu.addItem(new Icon(VaadinIcon.PLUS));
+        addBoard.add("Nove gremium");
+        addBoard.addClickListener(e -> {
             getUI().get().navigate(NewBoardView.class);
         });
 
@@ -108,7 +107,7 @@ public class BoardsView extends VerticalLayout {
         searchField.setWidth("25%");
         searchField.setPlaceholder("Najit");
         searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
-        searchField.setValueChangeMode(ValueChangeMode.EAGER);
+        searchField.setValueChangeMode(ValueChangeMode.LAZY);
         return searchField;
     }
 
