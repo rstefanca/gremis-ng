@@ -1,7 +1,6 @@
 package cz.upce.gremis.gremisng.organization.ui.committees;
 
 import com.vaadin.flow.data.provider.AbstractBackEndDataProvider;
-import com.vaadin.flow.data.provider.CallbackDataProvider;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;

@@ -7,6 +7,7 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
@@ -20,6 +21,7 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.function.SerializableBiConsumer;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import cz.upce.gremis.gremisng.organization.domain.BoardNameDto;
 import cz.upce.gremis.gremisng.organization.domain.CommitteeListItemView;
 import cz.upce.gremis.gremisng.organization.ui.dataproviders.BoardNamesDataProvider;
@@ -62,8 +64,15 @@ public class CommitteesView extends VerticalLayout implements HasDynamicTitle {
         });
 
         var aboveGrid = new HorizontalLayout();
-        aboveGrid.setVerticalComponentAlignment(Alignment.CENTER);
+
         aboveGrid.setWidthFull();
+
+        var span = new Span("Filtry:");
+        span.addClassNames(LumoUtility.Padding.Top.LARGE);
+
+        aboveGrid.setVerticalComponentAlignment(Alignment.CENTER, span);
+        aboveGrid.add(span);
+
         var searchField = configureSearchField();
         searchField.addValueChangeListener(e -> {
             filter.setSearchTerm(e.getValue());
@@ -90,7 +99,7 @@ public class CommitteesView extends VerticalLayout implements HasDynamicTitle {
         grid.setSelectionMode(Grid.SelectionMode.NONE);
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
 
-        grid.addColumn(createCommitteeRenderer()).setSortable(true).setHeader("Název");
+        grid.addColumn(createCommitteeRenderer()).setSortable(true).setSortProperty("name").setHeader("Název");
         grid.addColumn(CommitteeListItemView::boardName).setHeader("Grémium");
         grid.addColumn(CommitteeListItemView::durationInMonths).setHeader("Doba v měsících");
         grid.addColumn(createStatusComponentRenderer()).setHeader("Stav").setFlexGrow(0).setTextAlign(ColumnTextAlign.CENTER);
