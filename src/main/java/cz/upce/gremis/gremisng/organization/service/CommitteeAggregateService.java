@@ -2,6 +2,7 @@ package cz.upce.gremis.gremisng.organization.service;
 
 import cz.upce.gremis.gremisng.config.CacheNames;
 import cz.upce.gremis.gremisng.organization.domain.*;
+import cz.upce.gremis.gremisng.time.BusinessTime;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Log4j2
 @Service
@@ -21,13 +23,21 @@ public class CommitteeAggregateService {
 
     private final CommitteeSeatRepository committeeSeatRepository;
 
+    private final WorkingGroupRepository workingGroupRepository;
+
+    private final BusinessTime businessTime;
+
 
     CommitteeAggregateService(CommitteeRepository committeeRepository,
                               CommitteeTermRepository committeeTermRepository,
-                              CommitteeSeatRepository committeeSeatRepository) {
+                              CommitteeSeatRepository committeeSeatRepository,
+                              WorkingGroupRepository workingGroupRepository,
+                              BusinessTime businessTime) {
         this.committeeRepository = committeeRepository;
         this.committeeTermRepository = committeeTermRepository;
         this.committeeSeatRepository = committeeSeatRepository;
+        this.workingGroupRepository = workingGroupRepository;
+        this.businessTime = businessTime;
     }
 
     public Committee getCommittee(CommitteeId committeeId) {
@@ -83,5 +93,19 @@ public class CommitteeAggregateService {
 
     public CommitteeTerm getTerm(Long id) {
         return committeeTermRepository.findById(id).orElseThrow();
+    }
+
+    @Transactional
+    public void saveWorkingGroup(WorkingGroup workingGroup) {
+        workingGroupRepository.save(workingGroup);
+        log.info("Saved working group");
+    }
+
+    public int countTerms(CommitteeId committeeId) {
+        return (int) committeeTermRepository.countByCommittee_Id(committeeId.value());
+    }
+
+    public Optional<TermDto> getCurrentTerm(CommitteeId committeeId) {
+        return committeeTermRepository.getTermForDate(committeeId.value(), businessTime.getDate());
     }
 }

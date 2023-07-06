@@ -30,10 +30,20 @@ public class CommitteeTermsComboBox extends ComboBox<TermDto> {
         setAllowCustomValue(false);
         dataView = setItems(new DataProvider());
         setItemLabelGenerator(TermDto::description);
+        setLabel("Funkční období");
     }
 
     public void setCommitteeId(Long committeeId) {
         this.committeeId = committeeId;
+    }
+
+    public void setSelectedTermId(Long termId) {
+        if (termId != null) {
+            dataView.getItems()
+                    .filter(i -> i.id().equals(termId))
+                    .findFirst()
+                    .ifPresent(this::setValue);
+        }
     }
 
     private class DataProvider implements CallbackDataProvider.FetchCallback<TermDto, String> {
@@ -47,5 +57,14 @@ public class CommitteeTermsComboBox extends ComboBox<TermDto> {
 
     public Optional<TermDto> getItemById(Long id) {
         return dataView.getItems().filter(it -> it.id().equals(id)).findFirst();
+    }
+
+    public void refresh() {
+        dataView.refreshAll();
+        if (getValue() == null) {
+            dataView.getItems()
+                    .findFirst()
+                    .ifPresent(this::setValue);
+        }
     }
 }

@@ -33,14 +33,16 @@ public class WorkingGroupDialog extends Dialog {
 
     private final DatePicker to = new DatePicker("Konec");
 
-
     WorkingGroupDialog(CommitteeTermsComboBox termsComboBox) {
         this.termsComboBox = termsComboBox;
+
         configureForm();
         configureBinder();
         configureButtons();
 
         setHeaderTitle("Pracovní skupina");
+
+        addDialogCloseActionListener(e -> reset());
     }
 
     private void configureForm() {
@@ -71,7 +73,7 @@ public class WorkingGroupDialog extends Dialog {
                         return termsComboBox.getItemById(value).orElseThrow();
                     }
                 })
-                .bind(WorkingGroup::getCommitteeTermId, WorkingGroup::setCommitteeTermId);
+                .bind(WorkingGroup::getTermId, WorkingGroup::setTermId);
 
         binder.forField(name)
                 .asRequired()
@@ -113,8 +115,17 @@ public class WorkingGroupDialog extends Dialog {
         }
     }
 
-    public void setCommitteeId(Long committeeId) {
+    void setCommitteeId(Long committeeId) {
         termsComboBox.setCommitteeId(committeeId);
+    }
+
+    void setSelectedTermId(Long termId) {
+        termsComboBox.setSelectedTermId(termId);
+    }
+
+    void reset() {
+        binder.removeBean();
+        binder.refreshFields();
     }
 
 

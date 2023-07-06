@@ -7,7 +7,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.contextmenu.MenuItem;
-import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -40,25 +39,24 @@ import cz.upce.gremis.gremisng.ui.components.EmptyListPanel;
 import cz.upce.gremis.gremisng.ui.components.UiTips;
 
 import java.util.ArrayList;
-
+import java.util.Objects;
+import java.util.Optional;
 
 @Route(value = "/committee", layout = MainLayout.class)
 public class CommitteeDetailView extends VerticalLayout implements HasUrlParameter<Long>, HasDynamicTitle {
 
     private final CommitteeAggregateService service;
 
+    // Dialogs
+
     private final CommitteeTermDialog committeeTermDialog;
 
     private final CommitteeAssignmentDialog assignmentDialog;
 
-    private final CommitteeAssignmentsGrid committeeAssignmentsGrid;
-
     private final CommitteeSeatDialog committeeSeatDialog = new CommitteeSeatDialog();
 
-    private final WorkingGroupDialog workingGroupDialog;
 
     private final CommitteeMenuBar committeeMenuBar = new CommitteeMenuBar();
-
 
     private final Span titleSpan = new Span();
 
@@ -70,26 +68,28 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
 
     private Long selectedTermId;
 
+    private boolean termExits = false;
+
     public CommitteeDetailView(CommitteeAggregateService service,
                                CommitteeTermDialog committeeTermDialog,
                                CommitteeAssignmentDialog assignmentDialog,
-                               CommitteeAssignmentsGrid committeeAssignmentsGrid,
-                               WorkingGroupDialog workingGroupDialog) {
+                               WorkingGroupDialog workingGroupDialog,
+                               CommitteeDetailGrids committeeDetailGrids) {
         this.service = service;
         this.committeeTermDialog = committeeTermDialog;
         this.assignmentDialog = assignmentDialog;
-        this.committeeAssignmentsGrid = committeeAssignmentsGrid;
-        this.workingGroupDialog = workingGroupDialog;
 
         setWidthFull();
         setHeightFull();
 
         configureTop();
         configureTabs();
-        addDetailTab();
-        addTermsTab();
+        addDetailTab(committeeDetailGrids);
+        addTermsTab(committeeDetailGrids);
         configureMenu();
         addSeatsTab();
+
+        configureWorkingGroupDialog(workingGroupDialog, committeeDetailGrids);
     }
 
     private void configureTop() {
@@ -122,33 +122,43 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
         tabSheet.setSuffixComponent(committeeMenuBar);
     }
 
-    private void addDetailTab() {
+    private void addDetailTab(CommitteeDetailGrids grids) {
         var detailLayout = new VerticalLayout();
         var formLayout = new VerticalLayout();
         formLayout.add(committeeForm);
         detailLayout.add(formLayout);
 
-        var assignmentsDetails = new Details("Osoby ve funkcích", committeeAssignmentsGrid);
-        assignmentsDetails.setWidthFull();
-        assignmentsDetails.addOpenedChangeListener(e -> {
-            if (e.isOpened()) {
-                committeeAssignmentsGrid.init();
+        detailLayout.add(grids);
+
+        var detailsTab = tabSheet.add("Detail", detailLayout);
+        tabSheet.addAttachListener(attachEvent -> {
+            grids.setCommitteeId(committee.getId());
+            grids.setEnabled(termExits);
+            if (termExits) {
+                getCurrentTerm().ifPresent(term -> {
+                    setSelectedTermId(term.id());
+                    grids.setSelectedTermId(term.id());
+                });
             }
         });
 
-        detailLayout.add(assignmentsDetails);
-
-        var workingGroupDetails = new Details("Pracovní skupiny");
-        workingGroupDetails.addAttachListener(e -> {
-            workingGroupDetails.setEnabled(committee.isWorkingGroupsEnabled());
+        tabSheet.addSelectedChangeListener(e -> {
+            if (e.getSelectedTab() == detailsTab) {
+                grids.setEnabled(termExits);
+                if (termExits) {
+                    grids.setSelectedTermId(selectedTermId);
+                    grids.refresh();
+                }
+            }
         });
-        detailLayout.add(workingGroupDetails);
-
-        tabSheet.add("Detail", detailLayout);
     }
 
-    private void addTermsTab() {
-        var content = new LazyTerms();
+    private Optional<TermDto> getCurrentTerm() {
+        return service.getCurrentTerm(CommitteeId.of(committee.getId()));
+    }
+
+    private void addTermsTab(CommitteeDetailGrids committeeDetailGrids) {
+        var content = new LazyTerms(committeeDetailGrids);
         var tab = tabSheet.add("Všechna funkční období", content);
         content.setTab(tab);
     }
@@ -156,7 +166,6 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
     private void addSeatsTab() {
         var content = new LazySeats();
         tabSheet.add("Funkce", content);
-        //content.setTab(tab);
     }
 
     @Override
@@ -166,10 +175,11 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
 
     @Override
     public void setParameter(BeforeEvent event, Long parameter) {
-        committee = service.getCommittee(new CommitteeId(parameter));
+        var committeeId = new CommitteeId(parameter);
+        committee = service.getCommittee(committeeId);
         committeeForm.setItem(committee);
         assignmentDialog.setCommitteeId(committee.getId());
-        //committeeMenuBar.setWorkingGroupEnabled(committee.isWorkingGroupsEnabled());
+        termExits = service.countTerms(committeeId) != 0;
 
         updateTitle();
     }
@@ -186,13 +196,13 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
 
     private void openTermDialog() {
         committeeTermDialog.setItem(new CommitteeTerm());
-        committeeTermDialog.setBoardId(new BoardId(committee.getBoard().getId()));
+        committeeTermDialog.setBoardId(BoardId.of(committee.getBoard().getId()));
         committeeTermDialog.open();
     }
 
     private void openTermDialog(CommitteeTerm term) {
         committeeTermDialog.setItem(term);
-        committeeTermDialog.setBoardId(new BoardId(committee.getBoard().getId()));
+        committeeTermDialog.setBoardId(BoardId.of(committee.getBoard().getId()));
         committeeTermDialog.open();
     }
 
@@ -200,6 +210,30 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
         committeeSeatDialog.setItem(new CommitteeSeat());
         committeeSeatDialog.open();
     }
+
+    private void configureWorkingGroupDialog(WorkingGroupDialog workingGroupDialog, CommitteeDetailGrids committeeDetailGrids) {
+        workingGroupDialog.addCloseListener(e -> workingGroupDialog.close());
+        workingGroupDialog.addSaveListener(e -> {
+            var workingGroup = e.getWorkingGroup();
+            workingGroup.setCommitteeId(committee.getId());
+            service.saveWorkingGroup(workingGroup);
+            Notification.show("Ulozeno");
+            workingGroupDialog.close();
+            if (Objects.equals(workingGroup.getTermId(), selectedTermId)) {
+                committeeDetailGrids.refreshOpenGrids();
+            }
+        });
+        committeeMenuBar.workingGroupMenuItem.addClickListener(e -> {
+            workingGroupDialog.setCommitteeId(committee.getId());
+            workingGroupDialog.open();
+            workingGroupDialog.setSelectedTermId(selectedTermId);
+        });
+    }
+
+    private void setSelectedTermId(Long termId) {
+        this.selectedTermId = termId;
+    }
+
 
     private class LazyTerms extends Div {
 
@@ -211,22 +245,29 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
 
         private EmptyListPanel emptyListPanel;
 
-        LazyTerms() {
+        LazyTerms(CommitteeDetailGrids committeeDetailGrids) {
             addAttachListener(attachEvent -> {
                 var verticalLayout = new VerticalLayout();
                 configureEmptyList(verticalLayout);
                 configureGrid(verticalLayout);
                 add(verticalLayout);
 
-                committeeTermDialog.addSaveListener(e -> {
+                CommitteeDetailView.this.committeeTermDialog.addSaveListener(e -> {
                     var term = e.getTerm();
                     saveTerm(term);
-                    committeeTermDialog.close();
-                    committeeTermDialog.setItem(null);
+                    CommitteeDetailView.this.committeeTermDialog.close();
+                    CommitteeDetailView.this.committeeTermDialog.setItem(null);
                     tabSheet.setSelectedTab(this.tab);
-                    committeeAssignmentsGrid.setTermId(term.getId());
+
+                    committeeMenuBar.workingGroupMenuItem.setEnabled(true);
+                    termExits = true;
+                    if (selectedTermId == null) {
+                        committeeDetailGrids.refreshTermCombo();
+                        committeeDetailGrids.setSelectedTermId(e.getTerm().getId());
+                        selectedTermId = e.getTerm().getId();
+                    }
                 });
-                committeeTermDialog.addCloseListener(e -> committeeTermDialog.close());
+                CommitteeDetailView.this.committeeTermDialog.addCloseListener(e -> CommitteeDetailView.this.committeeTermDialog.close());
 
                 refresh();
             });
@@ -269,7 +310,7 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
         }
 
         private void refresh() {
-            var terms = service.getTermDtos(new CommitteeId(committee.getId()));
+            var terms = service.getTermDtos(CommitteeId.of(committee.getId()));
             dataView = grid.setItems(terms);
             updateView();
         }
@@ -345,7 +386,6 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
             grid.setSelectionMode(Grid.SelectionMode.NONE);
             grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
 
-
             grid.addColumn(new ComponentRenderer<>(seat -> new Avatar(String.valueOf(seat.order))))
                     .setHeader("Pořadí")
                     .setTextAlign(ColumnTextAlign.CENTER)
@@ -400,8 +440,9 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
             addButton.setTooltipText("Přídat osobu");
             addButton.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_TERTIARY);
             addButton.addClickListener(e -> {
-                assignmentDialog.setSelectedSeat(seat.delegate);
                 assignmentDialog.open();
+                assignmentDialog.setSelectedSeat(seat.delegate);
+                assignmentDialog.selectedTermId(selectedTermId);
             });
             div.add(addButton);
         }
@@ -507,14 +548,21 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
             var newSeatMenuItem = subMenu.addItem("Funkci");
             newSeatMenuItem.addClickListener(e -> openSeatDialog());
             workingGroupMenuItem = subMenu.addItem("Pracovní skupinu");
-            workingGroupMenuItem.addClickListener(e -> {
-                workingGroupDialog.setCommitteeId(committee.getId());
-                workingGroupDialog.open();
+            workingGroupMenuItem.addAttachListener(e -> {
+                var enabled = committee.isWorkingGroupsEnabled() && termExits;
+                workingGroupMenuItem.setEnabled(enabled);
             });
+
         }
 
         void setWorkingGroupEnabled(boolean enabled) {
             workingGroupMenuItem.setEnabled(enabled);
+        }
+
+        void addWorkingGroupClickAction(Runnable workingGroupClickAction) {
+            workingGroupMenuItem.addClickListener(e -> {
+                workingGroupClickAction.run();
+            });
         }
     }
 }

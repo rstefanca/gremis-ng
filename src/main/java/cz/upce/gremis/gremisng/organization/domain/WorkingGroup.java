@@ -20,7 +20,12 @@ public class WorkingGroup extends AbstractEntity {
     @Column(name = "COMMITTEE_TERM_ID", nullable = false, updatable = false)
     @Getter
     @Setter
-    private Long committeeTermId;
+    private Long termId;
+
+    @Column(name = "COMMITTEE_ID", nullable = false, updatable = false)
+    @Getter
+    @Setter
+    private Long committeeId;
 
     @Column(name = "START_DATE", nullable = false)
     private @NonNull

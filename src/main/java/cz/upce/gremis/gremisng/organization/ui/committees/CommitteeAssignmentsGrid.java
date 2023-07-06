@@ -16,7 +16,6 @@ import cz.upce.gremis.gremisng.assignments.domain.CommitteeSeatAssignment;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-
 @SpringComponent
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 class CommitteeAssignmentsGrid extends Div {
@@ -33,6 +32,7 @@ class CommitteeAssignmentsGrid extends Div {
 
     public CommitteeAssignmentsGrid(AssignmentsDataProvider assignmentsDataProvider) {
         this.assignmentsDataProvider = assignmentsDataProvider;
+
         setWidthFull();
         grid.setSelectionMode(Grid.SelectionMode.NONE);
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
@@ -81,6 +81,10 @@ class CommitteeAssignmentsGrid extends Div {
         if (gridDataView != null) {
             gridDataView.refreshAll();
         }
+    }
+
+    public Long getTermId() {
+        return termId;
     }
 
     private void removeAssignment(AbstractAssignment it) {

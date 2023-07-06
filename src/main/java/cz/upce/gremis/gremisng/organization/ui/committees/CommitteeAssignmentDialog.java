@@ -26,6 +26,8 @@ import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 
+// TODO - nahradit  termComboBox komponentou
+
 @SpringComponent
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 class CommitteeAssignmentDialog extends Dialog {
@@ -34,7 +36,7 @@ class CommitteeAssignmentDialog extends Dialog {
 
     private final ComboBox<Person> personCombo = new ComboBox<>("Osoba");
 
-    private final ComboBox<TermDto> termComboBox = new ComboBox<>("Funkční období");
+    private final CommitteeTermsComboBox termComboBox;
 
     private final ComboBox<CommitteeSeatDto> seatComboBox = new ComboBox<>("Funkce");
 
@@ -50,15 +52,20 @@ class CommitteeAssignmentDialog extends Dialog {
 
     private final CommitteeSeatRepository committeeSeatRepository;
 
+
     private Long committeeId;
 
     CommitteeAssignmentDialog(PersonRepository personRepository,
                               CommitteeSeatAssignmentService service,
                               CommitteeTermRepository committeeTermRepository,
-                              CommitteeSeatRepository committeeSeatRepository) {
+                              CommitteeSeatRepository committeeSeatRepository,
+                              CommitteeTermsComboBox committeeTermsComboBox) {
         this.service = service;
         this.committeeTermRepository = committeeTermRepository;
         this.committeeSeatRepository = committeeSeatRepository;
+        this.termComboBox = committeeTermsComboBox;
+
+        committeeTermsComboBox.setCommitteeId(committeeId);
 
         configureForm();
         configureButtons();
@@ -86,14 +93,8 @@ class CommitteeAssignmentDialog extends Dialog {
 
         from.setValue(LocalDate.now());
 
-
         add(layout);
 
-
-        termComboBox.setItems((CallbackDataProvider.FetchCallback<TermDto, String>) query -> {
-            VaadinSpringDataHelpers.toSpringPageRequest(query); //cheat
-            return committeeTermRepository.getTerms(committeeId).stream();
-        });
         seatComboBox.setItems((CallbackDataProvider.FetchCallback<CommitteeSeatDto, String>)query -> {
             VaadinSpringDataHelpers.toSpringPageRequest(query); //cheat
             return committeeSeatRepository.getSeats(committeeId).stream();
@@ -184,10 +185,14 @@ class CommitteeAssignmentDialog extends Dialog {
 
     void setSelectedSeat(CommitteeSeatDto selectedSeat) {
         seatComboBox.setValue(selectedSeat);
-
     }
 
     public void setCommitteeId(Long committeeId) {
         this.committeeId = committeeId;
+        termComboBox.setCommitteeId(committeeId);
+    }
+
+    public void selectedTermId(Long termId) {
+        termComboBox.setSelectedTermId(termId);
     }
 }
