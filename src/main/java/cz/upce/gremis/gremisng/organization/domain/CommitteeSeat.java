@@ -1,5 +1,6 @@
 package cz.upce.gremis.gremisng.organization.domain;
 
+import cz.upce.gremis.gremisng.common.AuditAttributes;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,6 +9,9 @@ import lombok.Setter;
 @Table(name = "COMMITTEE_SEAT")
 @EntityListeners({CommitteeSeatListener.class})
 public class CommitteeSeat extends AbstractSeat {
+
+    @Embedded
+    private final AuditAttributes auditAttributes = new AuditAttributes();
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "committee_seat_gen")

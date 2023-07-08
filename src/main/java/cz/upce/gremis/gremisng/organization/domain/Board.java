@@ -1,14 +1,17 @@
 package cz.upce.gremis.gremisng.organization.domain;
 
 
+import cz.upce.gremis.gremisng.common.AuditAttributes;
 import cz.upce.gremis.gremisng.common.PerRollamApproveType;
 import cz.upce.gremis.gremisng.core.AbstractEntity;
+import cz.upce.gremis.gremisng.core.EntityCreationListener;
 import cz.upce.gremis.gremisng.time.DateInterval;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,14 +20,15 @@ import java.util.stream.Stream;
 
 @Entity
 @Table(name = "BOARD")
+@EntityListeners({EntityCreationListener.class, AuditingEntityListener.class})
 public class Board extends AbstractEntity {
 
     private static final Set<BoardOption> ALL_OPTIONS = EnumSet.allOf(BoardOption.class);
 
     //formatter:off
     @SuppressWarnings("unused")
-    /*@Embedded
-    private final AuditAttributes auditAttributes = new AuditAttributes();*/
+    @Embedded
+    private final AuditAttributes auditAttributes = new AuditAttributes();
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "board_gen")

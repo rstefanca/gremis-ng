@@ -1,5 +1,6 @@
 package cz.upce.gremis.gremisng.organization.domain;
 
+import cz.upce.gremis.gremisng.common.AuditAttributes;
 import cz.upce.gremis.gremisng.core.AbstractEntity;
 import cz.upce.gremis.gremisng.time.DateInterval;
 import jakarta.persistence.*;
@@ -14,7 +15,7 @@ import java.time.LocalDate;
 public class CommitteeTerm extends AbstractEntity implements DateInterval {
 
     //@formatter:off
-    //private final @Embedded AuditAttributes auditAttributes = new AuditAttributes();
+    private final @Embedded AuditAttributes auditAttributes = new AuditAttributes();
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "committee_term_gen")

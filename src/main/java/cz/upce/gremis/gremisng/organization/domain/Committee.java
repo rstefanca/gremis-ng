@@ -1,5 +1,6 @@
 package cz.upce.gremis.gremisng.organization.domain;
 
+import cz.upce.gremis.gremisng.common.AuditAttributes;
 import cz.upce.gremis.gremisng.core.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -13,7 +14,8 @@ import java.util.Collection;
 @EntityListeners({CommitteeListener.class})
 public class Committee extends AbstractEntity {
     //@formatter:off
-    //private final @Embedded AuditAttributes auditAttributes = new AuditAttributes();
+    @Embedded
+    private final AuditAttributes auditAttributes = new AuditAttributes();
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "committee_template_gen")

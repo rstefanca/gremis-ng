@@ -1,6 +1,7 @@
 package cz.upce.gremis.gremisng.organization.domain;
 
 
+import cz.upce.gremis.gremisng.common.AuditAttributes;
 import cz.upce.gremis.gremisng.core.AbstractEntity;
 import cz.upce.gremis.gremisng.time.DateInterval;
 import jakarta.persistence.*;
@@ -13,6 +14,10 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "BOARD_TERM")
 public class BoardTerm extends AbstractEntity implements DateInterval {
+
+    @Embedded
+    private final AuditAttributes auditAttributes = new AuditAttributes();
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "board_term_gen")
