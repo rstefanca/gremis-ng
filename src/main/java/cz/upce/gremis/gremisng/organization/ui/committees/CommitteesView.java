@@ -7,7 +7,6 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
@@ -93,6 +92,7 @@ public class CommitteesView extends VerticalLayout implements HasDynamicTitle {
         });
         boardSelect.setWidth("450px");
 
+        aboveGrid.expand(boardSelect);
         aboveGrid.add(boardSelect);
 
         var grid = new Grid<CommitteeListItemView>();
