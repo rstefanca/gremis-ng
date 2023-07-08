@@ -28,6 +28,16 @@ dependencies {
 	implementation("com.vaadin:vaadin-spring-boot-starter")
 	implementation("org.jmolecules:jmolecules-events:1.7.0")
 
+	implementation("org.springframework.boot:spring-boot-starter-mail")
+
+	/*
+	<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-mail</artifactId>
+	</dependency>
+*/
+
+
 	//compile & annotation processors
 	compileOnly("org.projectlombok:lombok")
 	compileOnly("org.jetbrains:annotations:23.0.0")
