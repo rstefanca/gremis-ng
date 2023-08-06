@@ -1,6 +1,7 @@
 package cz.upce.gremis.gremisng.organization.ui.committees;
 
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -33,7 +34,13 @@ public class CommitteeDetailGrids extends VerticalLayout {
 
         setWidthFull();
 
-        add(committeeTermsComboBox);
+        Div termsComboDiv = new Div();
+        termsComboDiv.setWidth("33%");
+
+        termsComboDiv.add(committeeTermsComboBox);
+        committeeTermsComboBox.setWidthFull();
+        add(termsComboDiv);
+
 
         assignmentsDetails = new Details("Osoby ve funkcích", committeeAssignmentsGrid);
         assignmentsDetails.setWidthFull();

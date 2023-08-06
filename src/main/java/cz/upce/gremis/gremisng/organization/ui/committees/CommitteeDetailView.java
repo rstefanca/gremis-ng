@@ -460,7 +460,7 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
         }
 
         private void refresh() {
-            var seats = service.getSeatDtos(new CommitteeId(committee.getId()));
+            var seats = service.getSeatDtos(CommitteeId.of(committee.getId()));
             var decorated = seats.stream().map(SeatViewDecorator::new).toList();
             dataView = grid.setItems(new ArrayList<>(decorated));
             updateView();
@@ -500,7 +500,7 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
                 seat.order = order++;
                 orderedIds.add(seat.id());
             }
-            service.updateSeatsOrder(new CommitteeId(committee.getId()), orderedIds);
+            service.updateSeatsOrder(CommitteeId.of(committee.getId()), orderedIds);
             dataView.refreshAll();
         }
 

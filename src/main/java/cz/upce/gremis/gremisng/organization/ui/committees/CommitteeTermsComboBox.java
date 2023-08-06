@@ -4,6 +4,8 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.dataview.ComboBoxLazyDataView;
 import com.vaadin.flow.data.provider.CallbackDataProvider;
 import com.vaadin.flow.data.provider.Query;
+import com.vaadin.flow.data.renderer.LitRenderer;
+import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import cz.upce.gremis.gremisng.organization.domain.CommitteeTermRepository;
@@ -18,6 +20,15 @@ import java.util.stream.Stream;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CommitteeTermsComboBox extends ComboBox<TermDto> {
 
+    private static final String TERM_COMBO_TEMPLATE =
+            """
+                    <div style="display: flex;">
+                        <div>
+                            ${item.description}
+                            <div style=\\"font-size: var(--lumo-font-size-s); color: var(--lumo-secondary-text-color);\\">${item.from} - ${item.to}</div>
+                        </div>
+                    </div>""";
+
     private Long committeeId;
 
     private final CommitteeTermRepository committeeTermRepository;
@@ -29,8 +40,9 @@ public class CommitteeTermsComboBox extends ComboBox<TermDto> {
         this.committeeTermRepository = committeeTermRepository;
         setAllowCustomValue(false);
         dataView = setItems(new DataProvider());
-        setItemLabelGenerator(TermDto::description);
+        setItemLabelGenerator(termDto -> String.format("%s (%s - %s)",termDto.description(), termDto.start(), termDto.end()));
         setLabel("Funkční období");
+        setRenderer(createTermRenderer());
     }
 
     public void setCommitteeId(Long committeeId) {
@@ -66,5 +78,12 @@ public class CommitteeTermsComboBox extends ComboBox<TermDto> {
                     .findFirst()
                     .ifPresent(this::setValue);
         }
+    }
+
+    private Renderer<TermDto> createTermRenderer() {
+        return LitRenderer.<TermDto>of(TERM_COMBO_TEMPLATE)
+                .withProperty("description", TermDto::description)
+                .withProperty("from", term -> term.start().toString())
+                .withProperty("to", term -> term.end().toString());
     }
 }

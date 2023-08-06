@@ -32,10 +32,6 @@ public class CommitteeFilter {
         boardIds.add(boardId);
     }
 
-    void removeBoardId(Long boardId) {
-        boardIds.remove(boardId);
-    }
-
     public Collection<Long> getBoardIds() {
         return List.copyOf(boardIds);
     }

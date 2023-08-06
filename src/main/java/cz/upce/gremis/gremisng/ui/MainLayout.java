@@ -5,24 +5,22 @@ import com.vaadin.flow.component.HasComponents;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
-import com.vaadin.flow.dom.ClassList;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.Lumo;
 import cz.upce.gremis.gremisng.organization.ui.boards.BoardsView;
 import cz.upce.gremis.gremisng.organization.ui.committees.CommitteesView;
 import cz.upce.gremis.gremisng.persons.ui.PersonsView;
-import cz.upce.gremis.gremisng.voting.ui.VotingsView;
+import cz.upce.gremis.gremisng.voting.ui.VotesView;
 
+@JsModule("prefers-color-scheme.js")
 public class MainLayout extends AppLayout {
 
     private static final String H1_FONT_SIZE = "var(--lumo-font-size-l)";
@@ -76,7 +74,7 @@ public class MainLayout extends AppLayout {
                 createTab(VaadinIcon.HOME, "Úvodní stránka", HomeView.class),
                 createTab(VaadinIcon.DASHBOARD, "Grémia", BoardsView.class),
                 createTab(VaadinIcon.HANDSHAKE, "Komise", CommitteesView.class),
-                createTab(VaadinIcon.HANDS_UP, "Hlasování", VotingsView.class),
+                createTab(VaadinIcon.HANDS_UP, "Hlasování", VotesView.class),
                 createTab(VaadinIcon.GROUP, "Osoby", PersonsView.class));
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
         drawerHorizontalLayout.add(tabs);

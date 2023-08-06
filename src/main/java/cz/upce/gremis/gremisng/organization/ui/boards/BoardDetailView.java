@@ -2,6 +2,7 @@ package cz.upce.gremis.gremisng.organization.ui.boards;
 
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -31,10 +32,7 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.LitRenderer;
 import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.function.SerializableBiConsumer;
-import com.vaadin.flow.router.BeforeEvent;
-import com.vaadin.flow.router.HasDynamicTitle;
-import com.vaadin.flow.router.HasUrlParameter;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.*;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import cz.upce.gremis.gremisng.assignments.domain.BoardSeatAssignment;
@@ -51,6 +49,7 @@ import cz.upce.gremis.gremisng.ui.components.AssignmentDialog;
 import cz.upce.gremis.gremisng.ui.components.ConfirmDeleteDialog;
 import cz.upce.gremis.gremisng.ui.components.RendererTemplates;
 import cz.upce.gremis.gremisng.ui.components.UiTips;
+import cz.upce.gremis.gremisng.voting.ui.NewVotingView;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -133,6 +132,14 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
 
         var votingsDetails = new Details("Hlasováni", new Text("K dispozici nejsou žádné hlasování."));
         votingsDetails.setOpened(false);
+        var newVoteButton = new Button("Nové hlasování", click -> {
+            UI.getCurrent().navigate(NewVotingView.class, new RouteParameters(
+                    new RouteParam("boardId", board.getId().toString()),
+                    new RouteParam("termId", termSelector.getValue().getId().toString())
+
+            ));
+        });
+        votingsDetails.addContent(newVoteButton);
         detailLayout.add(votingsDetails);
 
         var meetingsDetails = new Details("Zasedání", new Span("K dispozici nejsou žádné zasedání."));
