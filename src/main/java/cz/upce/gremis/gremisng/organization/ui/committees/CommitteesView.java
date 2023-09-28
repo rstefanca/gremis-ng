@@ -26,10 +26,12 @@ import cz.upce.gremis.gremisng.organization.domain.CommitteeListItemView;
 import cz.upce.gremis.gremisng.organization.ui.dataproviders.BoardNamesDataProvider;
 import cz.upce.gremis.gremisng.ui.MainLayout;
 import cz.upce.gremis.gremisng.ui.components.RendererTemplates;
+import jakarta.annotation.security.PermitAll;
 
 import static cz.upce.gremis.gremisng.ui.components.SpanHelpers.setupStateSpan;
 
 @Route(value = "/committees", layout = MainLayout.class)
+@PermitAll
 public class CommitteesView extends VerticalLayout implements HasDynamicTitle {
 
     private final CommitteesDataProvider committeesDataProvider;

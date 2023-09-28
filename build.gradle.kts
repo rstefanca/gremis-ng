@@ -25,8 +25,17 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-cache")
+	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("com.vaadin:vaadin-spring-boot-starter")
 	implementation("org.jmolecules:jmolecules-events:1.7.0")
+
+	implementation("in.virit:viritin:2.1.1")
+
+	/*<dependency>
+	<groupId>in.virit</groupId>
+	<artifactId>viritin</artifactId>
+	<version>2.1.1</version>
+	</dependency>*/
 
 	implementation("org.springframework.boot:spring-boot-starter-mail")
 

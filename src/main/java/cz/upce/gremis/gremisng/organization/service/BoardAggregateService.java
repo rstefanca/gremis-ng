@@ -1,13 +1,14 @@
 package cz.upce.gremis.gremisng.organization.service;
 
+import cz.upce.gremis.gremisng.core.DataNotFoundException;
 import cz.upce.gremis.gremisng.organization.domain.*;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -16,8 +17,10 @@ import java.util.stream.Stream;
 @Service
 @Transactional(readOnly = true)
 public class BoardAggregateService {
+
     private final BoardRepository repository;
     private final BoardTermRepository boardTermRepository;
+
 
     private final CommitteeRepository committeeRepository;
 
@@ -46,19 +49,29 @@ public class BoardAggregateService {
         consumer.accept(board);
     }
 
+    public Board getBoard(Long id) {
+        return repository.findById(id).orElseThrow(() -> new DataNotFoundException("Board not found"));
+    }
+
     public void getBoardSeats(Long boardId, Consumer<Stream<BoardSeat>> onSeats) {
         var seats = repository.getSeats(boardId).sorted(Comparator.comparing(BoardSeat::getOrder));
         onSeats.accept(seats);
     }
 
     @Transactional
-    public void saveCommittee(Committee committee) {
-        committeeRepository.save(committee);
+    public Committee saveCommittee(Committee committee) {
+        var saved = committeeRepository.save(committee);
         log.info("Saved committee");
+        return saved;
     }
 
     public void getCommittees(Long boardId, Consumer<Stream<Committee>> onCommittees) {
         onCommittees.accept(repository.getCommittees(boardId));
+    }
+
+    //Cacheable?
+    public List<TermDto> getTerms(Long boardId) {
+        return boardTermRepository.getTerms(boardId);
     }
 
     @Transactional
@@ -73,5 +86,12 @@ public class BoardAggregateService {
         log.info("Updated seats - boardId = {}", boardId);
     }
 
+    public BoardTerm getTerm(Long termId) {
+        return boardTermRepository.findById(termId).orElseThrow(() -> new DataNotFoundException("Board term not found"));
+    }
 
+    @Transactional
+    public BoardTerm save(BoardTerm boardTerm) {
+        return boardTermRepository.save(boardTerm);
+    }
 }

@@ -5,7 +5,6 @@ import cz.upce.gremis.gremisng.common.AuditAttributes;
 import cz.upce.gremis.gremisng.common.PerRollamApproveType;
 import cz.upce.gremis.gremisng.core.AbstractEntity;
 import cz.upce.gremis.gremisng.core.EntityCreationListener;
-import cz.upce.gremis.gremisng.time.DateInterval;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -55,7 +54,7 @@ public class Board extends AbstractEntity {
     @Column(name = "PER_ROLLAM_ENABLED")
     @Getter
     @Setter
-    private boolean perRollam;
+    private boolean isPerRollamEnabled;
 
     @Column(name = "COMMITTEES_ENABLED")
     @Getter
@@ -83,15 +82,13 @@ public class Board extends AbstractEntity {
     //formatter:on
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
-    @Getter
+
     private final Collection<BoardTerm> terms = new ArrayList<>();
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
-    @Getter
     private final Collection<BoardSeat> seats = new ArrayList<>();
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
-    @Getter
     private final Collection<Committee> committees = new ArrayList<>();
 
     /**
@@ -132,24 +129,37 @@ public class Board extends AbstractEntity {
     }
 
     public Board setOptions(Collection<BoardOption> options) {
-        perRollam = options.contains(BoardOption.PER_ROLLAM);
+        isPerRollamEnabled = options.contains(BoardOption.PER_ROLLAM);
         committeesEnabled = options.contains(BoardOption.COMMITTEES);
         return this;
     }
 
     @Transient
     public Set<BoardOption> getOptions() {
-        if (perRollam && committeesEnabled) {
+        if (isPerRollamEnabled && committeesEnabled) {
             return ALL_OPTIONS;
         }
 
         return Stream.of(
-                        ImmutablePair.of(perRollam, BoardOption.PER_ROLLAM),
+                        ImmutablePair.of(isPerRollamEnabled, BoardOption.PER_ROLLAM),
                         ImmutablePair.of(committeesEnabled, BoardOption.COMMITTEES))
                 .filter(it -> it.left)
                 .map(it -> it.right)
                 .collect(Collectors.toSet());
     }
+
+    public Stream<BoardTerm> getTerms() {
+        return terms.stream();
+    }
+
+    public Stream<Committee> getCommittees() {
+        return committees.stream();
+    }
+
+    public Stream<BoardSeat> getSeats() {
+        return seats.stream();
+    }
+
 
 
     public boolean remove(BoardTerm term) {
@@ -160,6 +170,6 @@ public class Board extends AbstractEntity {
     public String toString() {
         return """
                 Board %s - %s (%s) [C:%b,P:%b]"""
-                .formatted(name, abbreviation, getId(), committeesEnabled, perRollam);
+                .formatted(name, abbreviation, getId(), committeesEnabled, isPerRollamEnabled);
     }
 }

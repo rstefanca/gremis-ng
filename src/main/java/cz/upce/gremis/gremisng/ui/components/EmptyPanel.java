@@ -6,16 +6,16 @@ import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
-public class EmptyListPanel extends HorizontalLayout {
+public class EmptyPanel extends HorizontalLayout {
 
     private final Button actionButton;
 
 
-    public EmptyListPanel(String text, String buttonText) {
+    public EmptyPanel(String text, String buttonText) {
         setWidthFull();
         setPadding(true);
         setAlignItems(Alignment.CENTER);
-        setJustifyContentMode(JustifyContentMode.CENTER);
+        setJustifyContentMode(JustifyContentMode.START);
         add(new Text(text));
 
         actionButton = new Button(buttonText);

@@ -22,10 +22,12 @@ import cz.upce.gremis.gremisng.voting.domain.Resolution;
 import cz.upce.gremis.gremisng.voting.domain.Vote;
 import cz.upce.gremis.gremisng.voting.domain.VoteState;
 import cz.upce.gremis.gremisng.voting.service.VoteAggregateService;
+import jakarta.annotation.security.PermitAll;
 
 import java.util.List;
 
 @Route(value = "/vote", layout = MainLayout.class)
+@PermitAll
 public class VoteView extends VerticalLayout implements HasUrlParameter<Long>, HasDynamicTitle {
 
     private final VoteViewLogic viewLogic = new VoteViewLogic(this);

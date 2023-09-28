@@ -10,7 +10,9 @@ import lombok.NonNull;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @Entity
@@ -18,8 +20,6 @@ import java.util.stream.Stream;
 public class Person extends AbstractEntity {
 
     private transient boolean isNew = true;
-
-    //@formatter:off
 
 
     @Id
@@ -66,7 +66,8 @@ public class Person extends AbstractEntity {
     @Column(name = "RESET_EXPIRED")
     private @Getter @Setter LocalDate resetExpired;
 
-    //@formatter:on
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<SystemRole> systemRoles = new LinkedHashSet<>();
 
     public Person() {
     }
@@ -99,6 +100,15 @@ public class Person extends AbstractEntity {
 
     @Transient
     private PersonDetail currentDetail;
+
+    public Set<SystemRole> getSystemRoles() {
+        return systemRoles;
+    }
+
+    public void setSystemRoles(Set<SystemRole> systemRoles) {
+        this.systemRoles = systemRoles;
+    }
+
 
     public String getDegreeLeading() {
         return currentDetail.getDegreeLeading();

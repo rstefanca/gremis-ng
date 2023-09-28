@@ -36,12 +36,14 @@ import cz.upce.gremis.gremisng.persons.domain.Person;
 import cz.upce.gremis.gremisng.persons.domain.PersonDetail;
 import cz.upce.gremis.gremisng.persons.service.PersonService;
 import cz.upce.gremis.gremisng.ui.MainLayout;
+import jakarta.annotation.security.PermitAll;
 
 
 import java.util.List;
 
 
 @Route(value = "person", layout = MainLayout.class)
+@PermitAll
 public class PersonView extends VerticalLayout implements HasUrlParameter<Long> {
 
     private final PersonService personService;

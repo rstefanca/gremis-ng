@@ -17,6 +17,7 @@ import com.vaadin.flow.component.grid.dataview.GridLazyDataView;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.grid.dnd.GridDropLocation;
 import com.vaadin.flow.component.grid.dnd.GridDropMode;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -50,6 +51,7 @@ import cz.upce.gremis.gremisng.ui.components.ConfirmDeleteDialog;
 import cz.upce.gremis.gremisng.ui.components.RendererTemplates;
 import cz.upce.gremis.gremisng.ui.components.UiTips;
 import cz.upce.gremis.gremisng.voting.ui.NewVotingView;
+import jakarta.annotation.security.PermitAll;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,6 +60,8 @@ import java.util.Optional;
 import static cz.upce.gremis.gremisng.ui.components.SpanHelpers.setupStateSpan;
 
 @Route(value = "/board", layout = MainLayout.class)
+@PermitAll
+@Deprecated
 public class BoardDetailView extends VerticalLayout implements HasUrlParameter<Long>, HasDynamicTitle {
 
 
@@ -65,6 +69,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
 
     private final BoardAggregateService service;
     private final BoardSeatAssignmentService assignmentService;
+    private final Anchor newXischt;
 
     private BoardForm boardForm;
     private ComboBox<BoardTerm> termSelector = new ComboBox<>();
@@ -92,6 +97,8 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
 
     private Board board;
 
+    private final BoardInfoCard infoCard = new BoardInfoCard();
+
     // TODO cleanup constructor
     BoardDetailView(BoardAggregateService service,
                     BoardSeatAssignmentService assignmentService,
@@ -105,25 +112,31 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
         var top = new HorizontalLayout();
         setupTop(top);
 
+        titleSpan.addClassNames(
+                LumoUtility.FontSize.XLARGE,
+                LumoUtility.FontWeight.BOLD,
+                LumoUtility.Padding.MEDIUM
+        );
+
 
         setupTermsGrid();
 
         boardForm = new BoardForm();
-        //boardForm.setReadOnly(true);
+        boardForm.setVisible(false);
 
-        var detailLayout = new VerticalLayout(boardForm);
 
-        var saveButton = new Button(getTranslation("buttons.save"));
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        var detailLayout = new VerticalLayout();
+        detailLayout.setPadding(false);
+        detailLayout.add(termSelector);
+        detailLayout.add(infoCard);
 
-        detailLayout.add(saveButton);
 
+        termSelector.setLabel("Vyberte funkční období");
         termSelector.setItemLabelGenerator(BoardTerm::getDescription);
         termSelector.setRenderer(createRenderer());
         termSelector.setMinWidth("225px");
         termSelector.setMaxWidth("300px");
 
-        detailLayout.add(termSelector);
 
         var assignedPersonsDetails = new Details("Osoby ve funkcích", assignmentsComponent);
         assignedPersonsDetails.setOpened(false);
@@ -132,13 +145,12 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
 
         var votingsDetails = new Details("Hlasováni", new Text("K dispozici nejsou žádné hlasování."));
         votingsDetails.setOpened(false);
-        var newVoteButton = new Button("Nové hlasování", click -> {
-            UI.getCurrent().navigate(NewVotingView.class, new RouteParameters(
-                    new RouteParam("boardId", board.getId().toString()),
-                    new RouteParam("termId", termSelector.getValue().getId().toString())
+        var newVoteButton = new Button("Nové hlasování", click ->
+                UI.getCurrent().navigate(NewVotingView.class, new RouteParameters(
+                        new RouteParam("boardId", board.getId().toString()),
+                        new RouteParam("termId", termSelector.getValue().getId().toString())
 
-            ));
-        });
+                )));
         votingsDetails.addContent(newVoteButton);
         detailLayout.add(votingsDetails);
 
@@ -168,7 +180,8 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
         add(tabSheet);
 
 
-        add(top, tabSheet);
+        newXischt = new Anchor("/boardnew/", "Novy xicht" );
+        add(top, newXischt, tabSheet);
     }
 
     private void setupTop(HorizontalLayout top) {
@@ -196,7 +209,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
                         if (boardTermDialog == null) {
                             initTermDialog();
                         }
-                        boardTermDialog.setItem(term);
+                        boardTermDialog.readTerm(term);
                         boardTermDialog.open();
                     });
 
@@ -236,7 +249,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
         service.getBoard(parameter, board -> {
             this.board = board;
             boardForm.setBoard(board);
-            var terms = board.getTerms();
+            var terms = board.getTerms().toList();
             termSelector.setItems(terms);
             termsDataView = termsGrid.setItems(terms);
             termsBadge.setText(String.valueOf(terms.size()));
@@ -244,13 +257,19 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
             terms.stream().findFirst().ifPresent(t -> termSelector.setValue(t));
             committeeTab.setEnabled(board.isCommitteesEnabled());
             titleSpan.setText(String.format("%s - %s", board.getName(), termSelector.getValue().getDescription()));
+
+            infoCard.setBoard(board);
         });
+        newXischt.setHref(newXischt.getHref() + parameter);
     }
 
     private void createMenu(TabSheet parent) {
 
         var menuBar = new MenuBar();
         menuBar.addThemeVariants(MenuBarVariant.LUMO_END_ALIGNED);
+
+
+        var editMenuItem = menuBar.addItem("Upravit");
 
         var createMenuItem = menuBar.addItem("Přidat");
         var subMenu = createMenuItem.getSubMenu();
@@ -260,7 +279,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
             if (boardTermDialog == null) {
                 initTermDialog();
             }
-            boardTermDialog.setItem(new BoardTerm());
+            boardTermDialog.readTerm(new BoardTerm());
             boardTermDialog.open();
         });
 
@@ -353,13 +372,13 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
 
     private void saveBoard() {
         board = service.save(board);
-        termsDataView = termsGrid.setItems(board.getTerms());
+        termsDataView = termsGrid.setItems(board.getTerms().toList());
     }
 
     private void addTerm(BoardTerm boardTerm) {
         board.add(boardTerm);
         board = service.save(board);
-        termsDataView = termsGrid.setItems(board.getTerms());
+        termsDataView = termsGrid.setItems(board.getTerms().toList());
     }
 
     private void showConfirmDeleteTermDialog(ComponentEventListener<ConfirmDialog.ConfirmEvent> confirmListener) {

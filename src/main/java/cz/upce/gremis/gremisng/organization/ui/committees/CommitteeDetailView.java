@@ -35,14 +35,16 @@ import cz.upce.gremis.gremisng.organization.domain.*;
 import cz.upce.gremis.gremisng.organization.service.CommitteeAggregateService;
 import cz.upce.gremis.gremisng.ui.MainLayout;
 import cz.upce.gremis.gremisng.ui.components.ConfirmDeleteDialog;
-import cz.upce.gremis.gremisng.ui.components.EmptyListPanel;
+import cz.upce.gremis.gremisng.ui.components.EmptyPanel;
 import cz.upce.gremis.gremisng.ui.components.UiTips;
+import jakarta.annotation.security.PermitAll;
 
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 
 @Route(value = "/committee", layout = MainLayout.class)
+@PermitAll
 public class CommitteeDetailView extends VerticalLayout implements HasUrlParameter<Long>, HasDynamicTitle {
 
     private final CommitteeAggregateService service;
@@ -243,7 +245,7 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
 
         private Tab tab;
 
-        private EmptyListPanel emptyListPanel;
+        private EmptyPanel emptyListPanel;
 
         LazyTerms(CommitteeDetailGrids committeeDetailGrids) {
             addAttachListener(attachEvent -> {
@@ -274,7 +276,7 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
         }
 
         private void configureEmptyList(VerticalLayout verticalLayout) {
-            emptyListPanel = new EmptyListPanel("Nebyla nalezena žádná funkční období. ", "Přidat funkční období");
+            emptyListPanel = new EmptyPanel("Nebyla nalezena žádná funkční období. ", "Přidat funkční období");
             emptyListPanel.addActionClickListener(e -> openTermDialog());
             verticalLayout.add(emptyListPanel);
         }
@@ -352,7 +354,7 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
 
         private Div tip;
 
-        private EmptyListPanel emptyListPanel;
+        private EmptyPanel emptyListPanel;
 
         public LazySeats() {
             addAttachListener(attachEvent -> {
@@ -360,7 +362,7 @@ public class CommitteeDetailView extends VerticalLayout implements HasUrlParamet
                 tip = UiTips.addTip(verticalLayout, "Pořadí funkcí lze změnit přetažením");
                 tip.setVisible(false);
 
-                emptyListPanel = new EmptyListPanel("Nebyly nalezeny žádné funkce. ", "Přidat funkci");
+                emptyListPanel = new EmptyPanel("Nebyly nalezeny žádné funkce. ", "Přidat funkci");
                 emptyListPanel.addActionClickListener(e -> openSeatDialog());
 
                 verticalLayout.add(emptyListPanel);

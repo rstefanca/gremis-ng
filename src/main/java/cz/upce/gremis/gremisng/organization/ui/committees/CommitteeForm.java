@@ -78,6 +78,11 @@ public class CommitteeForm extends FormLayout {
                 .bind(Committee::isWorkingGroupsEnabled, Committee::setWorkingGroupsEnabled);
     }
 
+    public boolean writeBeanIfValid(Committee committee) {
+        return binder.writeBeanIfValid(committee);
+    }
+
+    @Deprecated
     void validateAndSave() {
         var validationStatus = binder.writeBeanIfValid(item);
         if (validationStatus) {
@@ -88,6 +93,7 @@ public class CommitteeForm extends FormLayout {
         }
     }
 
+    @Deprecated
     void cancel() {
         fireEvent(new CommitteeForm.CancelEvent(this));
     }

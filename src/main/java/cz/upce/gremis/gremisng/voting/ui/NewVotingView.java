@@ -20,12 +20,14 @@ import cz.upce.gremis.gremisng.voting.domain.Resolution;
 import cz.upce.gremis.gremisng.voting.domain.Vote;
 import cz.upce.gremis.gremisng.voting.domain.VoteBoard;
 import cz.upce.gremis.gremisng.voting.service.VoteAggregateService;
+import jakarta.annotation.security.RolesAllowed;
 import lombok.ToString;
 
 import java.io.Serializable;
 
 //http://localhost:8080/new-voting/1000/1000
 @Route(value = "/new-voting/:boardId/:termId", layout = MainLayout.class)
+@RolesAllowed({"ROOT"})
 public class NewVotingView extends VerticalLayout implements BeforeEnterObserver {
 
     private final VoteAggregateService voteAggregateService;

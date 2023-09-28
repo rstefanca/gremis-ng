@@ -5,7 +5,7 @@ import cz.upce.gremis.gremisng.common.GremisRole;
 import cz.upce.gremis.gremisng.common.PerRollamApproveType;
 import cz.upce.gremis.gremisng.organization.domain.*;
 import cz.upce.gremis.gremisng.organization.service.BoardAggregateService;
-import cz.upce.gremis.gremisng.persons.domain.PersonRepository;
+import cz.upce.gremis.gremisng.persons.domain.*;
 import cz.upce.gremis.gremisng.time.DateInterval;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @Component
 @Order(1)
@@ -59,14 +60,27 @@ class MyApplicationListener
 
         var seat = new BoardSeat();
         seat.setDuration(36)
+                .setOrder(1)
                 .setName("Senátor")
                 .setSettings(new SeatSettings()
                         .setFilling(Filling.MANDATORY)
                         .setAssignmentType(AssignmentType.MULTIPLE_PERSONS)
                         .setGrantedRole(GremisRole.MEMBER)
-                        .setMinMemberCount(4));
+                        .setMinMemberCount(1));
 
         board.add(seat);
+
+        var seat2 = new BoardSeat();
+        seat2.setDuration(36)
+                .setOrder(2)
+                .setName("Senátor 2")
+                .setSettings(new SeatSettings()
+                        .setFilling(Filling.MANDATORY)
+                        .setAssignmentType(AssignmentType.MULTIPLE_PERSONS)
+                        .setGrantedRole(GremisRole.MEMBER)
+                        .setMinMemberCount(1));
+
+        board.add(seat2);
 
         var committee = new Committee()
                 .setName("Ekonomicka komise")
@@ -88,7 +102,28 @@ class MyApplicationListener
             boardSeatAssignmentService.create(seat, term1, person, dateInterval, "Test");
         });
 
+        var admin = new Person();
+        admin.setEmail("admin@gremis.cz");
+        admin.setState(PersonState.ACTIVE);
+        admin.setPassword("heslo");
+        admin.setLogin("admin");
+        admin.setAuthenticationMethod(AuthenticationMethod.LOCAL);
+        admin.setPersonHistory(PersonHistory.EMPTY.addPersonDetail(PersonDetail.builder()
+                .firstName("Admin")
+                .lastName("Adminovic")
+                .job("Gremis admin")
+                .workplace("Gremis")
+                .note("Ja su admin")
+                .build()));
+        var systemRole = new SystemRole();
+        systemRole.setRoleOrigin(RoleOrigin.MANUAL);
+        systemRole.setPermissionLevel(GremisRole.ROOT);
+        systemRole.setStart(LocalDate.now().minusDays(20));
+        systemRole.setPerson(admin);
 
+        admin.setSystemRoles(Set.of(systemRole));
+
+        personRepository.save(admin);
     }
 
 }

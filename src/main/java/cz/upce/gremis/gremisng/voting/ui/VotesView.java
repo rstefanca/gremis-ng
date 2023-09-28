@@ -19,8 +19,10 @@ import cz.upce.gremis.gremisng.organization.ui.committees.CommitteeDetailView;
 import cz.upce.gremis.gremisng.organization.ui.dataproviders.BoardNamesDataProvider;
 import cz.upce.gremis.gremisng.ui.MainLayout;
 import cz.upce.gremis.gremisng.voting.domain.VoteDto;
+import jakarta.annotation.security.PermitAll;
 
 @Route(value = "/votes", layout = MainLayout.class)
+@PermitAll
 public class VotesView extends VerticalLayout {
 
     private final VoteFilter filter = new VoteFilter();

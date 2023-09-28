@@ -1,35 +1,63 @@
 package cz.upce.gremis.gremisng.organization.ui.boards;
 
+import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
+import com.vaadin.flow.component.HasValue.ValueChangeListener;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.StatusChangeListener;
+import com.vaadin.flow.data.binder.ValidationResult;
+import com.vaadin.flow.data.binder.Validator;
+import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.shared.Registration;
 import cz.upce.gremis.gremisng.organization.domain.BoardTerm;
 
-import java.time.LocalDate;
 
-// TODO use events, add buttons here (remove from dialog)
-public class BoardTermForm extends FormLayout {
+class BoardTermForm extends FormLayout {
 
-    private Binder<BoardTerm> binder = new Binder<>(BoardTerm.class);
+    private final Binder<BoardTerm> binder = new Binder<>(BoardTerm.class);
 
-    private DatePicker from = new DatePicker("Začátek");
-    private DatePicker to = new DatePicker("Konec");
+    private final TextField description;
 
-    private BoardTerm item = new BoardTerm();
+    private final DatePicker from;
+    private final DatePicker to;
+
+    private boolean descriptionAlreadyExists;
+    private Binder.Binding<BoardTerm, String> descriptionBinder;
+
 
     public BoardTermForm() {
+
+        setWidthFull();
 
         setResponsiveSteps(
                 new FormLayout.ResponsiveStep("0", 1),
                 new FormLayout.ResponsiveStep("20em", 2));
 
-        var description = new TextField("Popis");
+        description = new TextField("Popis");
+        description.setClearButtonVisible(true);
+        description.setValueChangeMode(ValueChangeMode.ON_BLUR);
 
-        from.setValue(LocalDate.now());
+        from = new DatePicker("Začátek");
+        to = new DatePicker("Konec");
 
-        binder.forField(description)
+        add(description, 2);
+        add(from, to);
+
+
+        configureBinding();
+    }
+
+    private void configureBinding() {
+        descriptionBinder = binder.forField(description)
                 .asRequired()
+                .withValidator((Validator<String>) (value, context) -> {
+                    if (descriptionAlreadyExists) {
+                        return ValidationResult.error("Název již existuje");
+                    }
+                    return ValidationResult.ok();
+                })
                 .bind(BoardTerm::getDescription, BoardTerm::setDescription);
 
         var fromBinder = binder.forField(from)
@@ -55,31 +83,50 @@ public class BoardTermForm extends FormLayout {
             from.setInvalid(false);
             toBinder.validate();
         });
-
-        add(description, 2);
-        add(from, to);
     }
 
-    BoardTerm getItem() {
-        binder.writeBeanIfValid(item);
-        return item;
+    void readBean(BoardTerm boardTerm) {
+        binder.readBean(boardTerm);
     }
 
-    void setItem(BoardTerm item) {
-        this.item = item;
-        binder.readBean(item);
+    boolean writeBeanIfValid(BoardTerm boardTerm) {
+        return binder.writeBeanIfValid(boardTerm);
+    }
+
+    @Deprecated
+    BoardTerm getBoardTerm() {
+       return null;
+    }
+
+    @Deprecated
+    void setBoardTerm(BoardTerm boardTerm) {
+        binder.readBean(boardTerm);
     }
 
     private boolean isIntervalSet() {
         return from.getValue() != null && to.getValue() != null;
     }
 
+    Registration addDescriptionValueChangeListener(ValueChangeListener<? super ComponentValueChangeEvent<TextField, String>> listener) {
+        return description.addValueChangeListener(listener);
+    }
+
+    void setDescriptionExists(boolean descriptionAlreadyExists) {
+        this.descriptionAlreadyExists = descriptionAlreadyExists;
+        descriptionBinder.validate();
+    }
+
     boolean isValid() {
         return binder.isValid();
     }
 
+    void addStatusChangeListener(StatusChangeListener listener) {
+        binder.addStatusChangeListener(listener);
+    }
+
     void clear() {
         binder.removeBean();
-        binder.refreshFields();
     }
+
+
 }

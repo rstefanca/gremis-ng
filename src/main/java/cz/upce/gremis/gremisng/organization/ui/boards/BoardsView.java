@@ -24,20 +24,26 @@ import com.vaadin.flow.function.SerializableBiConsumer;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.Route;
 import cz.upce.gremis.gremisng.organization.domain.BoardListItemView;
+import cz.upce.gremis.gremisng.security.SecurityService;
 import cz.upce.gremis.gremisng.ui.MainLayout;
+import jakarta.annotation.security.PermitAll;
 
 import static cz.upce.gremis.gremisng.ui.components.RendererTemplates.NAME_AND_ABBREVIATION_TEMPLATE;
 import static cz.upce.gremis.gremisng.ui.components.SpanHelpers.setupStateSpan;
 
 @Route(value = "/boards", layout = MainLayout.class)
+@PermitAll
 public class BoardsView extends VerticalLayout {
-
-
 
     private final BoardsFilter boardsFilter = new BoardsFilter();
 
+    private final SecurityService securityService;
 
-    public BoardsView(BoardsDataProvider boardsDataProvider) {
+    public BoardsView(
+            BoardsDataProvider boardsDataProvider,
+            SecurityService securityService
+    ) {
+        this.securityService = securityService;
         ConfigurableFilterDataProvider<BoardListItemView, Void, BoardsFilter> filterDataProvider = boardsDataProvider
                 .withConfigurableFilter();
 
@@ -55,11 +61,14 @@ public class BoardsView extends VerticalLayout {
         menuDiv.setWidthFull();
         var top = new HorizontalLayout(searchField, menuDiv);
         top.setWidthFull();
-        var addBoard = menu.addItem(new Icon(VaadinIcon.PLUS));
-        addBoard.add("Nove gremium");
-        addBoard.addClickListener(e -> {
-            getUI().get().navigate(NewBoardView.class);
-        });
+
+        if (isRoot()) {
+            var addBoard = menu.addItem(new Icon(VaadinIcon.PLUS));
+            addBoard.add("Nove gremium");
+            addBoard.addClickListener(e -> {
+                getUI().get().navigate(NewBoardView.class);
+            });
+        }
 
         var grid = new Grid<BoardListItemView>();
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
@@ -75,10 +84,8 @@ public class BoardsView extends VerticalLayout {
 
         GridContextMenu<BoardListItemView> contextMenu = grid.addContextMenu();
 
-        contextMenu.addItem("Edit", event -> {
-            event.getItem().ifPresent(board ->
-                    getUI().ifPresent(ui -> ui.navigate(BoardDetailView.class, board.id())));
-        });
+        contextMenu.addItem("Edit", event -> event.getItem().ifPresent(board ->
+                getUI().ifPresent(ui -> ui.navigate(BoardView.class, board.id()))));
         contextMenu.addItem("Delete", event -> {
 
         });
@@ -119,5 +126,10 @@ public class BoardsView extends VerticalLayout {
 
     private static ComponentRenderer<Span, BoardListItemView> createStatusComponentRenderer() {
         return new ComponentRenderer<>(Span::new, statusComponentUpdater);
+    }
+
+    private boolean isRoot() {
+        return securityService.getAuthenticatedUserDetails()
+                .getAuthorities().stream().anyMatch(it -> it.getAuthority().equals("ROLE_ROOT"));
     }
 }

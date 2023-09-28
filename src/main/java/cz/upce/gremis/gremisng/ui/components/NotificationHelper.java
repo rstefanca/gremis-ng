@@ -38,4 +38,8 @@ public class NotificationHelper {
         notification.add(layout);
         notification.open();
     }
+
+    public static void showInfo(String message) {
+        Notification.show(message, 3000, Notification.Position.TOP_CENTER);
+    }
 }
