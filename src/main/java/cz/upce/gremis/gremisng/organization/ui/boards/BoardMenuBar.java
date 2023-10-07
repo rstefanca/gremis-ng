@@ -10,33 +10,29 @@ import com.vaadin.flow.component.menubar.MenuBarVariant;
 
 class BoardMenuBar extends Div {
 
-    private final BoardViewLogic viewLogic;
-
-    private final MenuBar menuBar;
-
     private final MenuItem edit;
     private final MenuItem committee;
     private final MenuItem perRollam;
+    private final MenuItem term;
+    private final MenuItem seat;
 
     public BoardMenuBar(BoardViewLogic viewLogic) {
-        this.viewLogic = viewLogic;
-
-        menuBar = new MenuBar();
+        var menuBar = new MenuBar();
         menuBar.addThemeVariants(MenuBarVariant.LUMO_ICON);
 
         edit = menuBar.addItem("Upravit");
         edit.addClickListener(e -> viewLogic.edit());
 
         var addMenuItem = menuBar.addItem(new Icon(VaadinIcon.CHEVRON_DOWN));
-        var addTerm = addMenuItem.getSubMenu().addItem("Přidat funkční období");
+        term = addMenuItem.getSubMenu().addItem("Přidat funkční období");
 
-        addMenuItem.getSubMenu().addItem("Přidat funkci");
+        seat = addMenuItem.getSubMenu().addItem("Přidat funkci");
         committee = addMenuItem.getSubMenu().addItem("Přidat komisi");
         perRollam = addMenuItem.getSubMenu().addItem("Přidat hlasování");
         addMenuItem.getSubMenu().add(new Hr());
         addMenuItem.getSubMenu().addItem("Odstranit");
 
-        addTerm.addClickListener(e -> viewLogic.addTerm());
+        term.addClickListener(e -> viewLogic.addTerm());
         committee.addClickListener(e -> viewLogic.addCommittee());
 
         add(menuBar);
@@ -44,6 +40,18 @@ class BoardMenuBar extends Div {
 
     void disableEditing() {
         edit.setEnabled(false);
+        term.setEnabled(false);
+        seat.setEnabled(false);
+        committee.setEnabled(false);
+        perRollam.setEnabled(false);
+    }
+
+    void enableEditing() {
+        edit.setEnabled(true);
+        term.setEnabled(true);
+        seat.setEnabled(true);
+        committee.setEnabled(true);
+        perRollam.setEnabled(true);
     }
 
     void setCommitteeEnabled(boolean enabled) {

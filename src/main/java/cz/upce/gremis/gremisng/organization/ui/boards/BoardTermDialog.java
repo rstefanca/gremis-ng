@@ -42,10 +42,6 @@ class BoardTermDialog extends Dialog {
         form.readBean(boardTerm);
     }
 
-    void setOnSave(Consumer<BoardTerm> consumer) {
-
-    }
-
     Registration addSaveListener(ComponentEventListener<DialogSaveEvent> listener) {
         return addListener(DialogSaveEvent.class, listener);
     }

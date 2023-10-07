@@ -168,14 +168,14 @@ public class PersonView extends VerticalLayout implements HasUrlParameter<Long> 
         Div menuDiv = createMenu(historyDialog, deleteDialog);
 
         var backIcon = VaadinIcon.ARROW_BACKWARD.create();
-        var confirmed2 = new Span(new Span(getTranslation("grid.persons.state.active")),
+        var activeBadge = new Span(new Span(getTranslation("grid.persons.state.active")),
                 createIcon(VaadinIcon.CHECK));
-        confirmed2.addClassName(LumoUtility.Margin.Left.LARGE);
-        confirmed2.getElement().getThemeList().add("badge success");
+        activeBadge.addClassName(LumoUtility.Margin.Left.LARGE);
+        activeBadge.getElement().getThemeList().add("badge success");
         backIcon.setTooltipText("Na seznam uzivatelu");
         backIcon.addClickListener(e -> getUI().ifPresent(it -> it.navigate(PersonsView.class)));
         top.add(backIcon);
-        top.add(confirmed2);
+        top.add(activeBadge);
         top.add(menuDiv);
 
 

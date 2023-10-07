@@ -1,8 +1,11 @@
 package cz.upce.gremis.gremisng.organization.ui.boards;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -13,11 +16,14 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.LitRenderer;
+import com.vaadin.flow.data.renderer.Renderer;
+import com.vaadin.flow.function.SerializableBiConsumer;
 import com.vaadin.flow.function.SerializableComparator;
 import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.router.BeforeEvent;
@@ -25,22 +31,27 @@ import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import cz.upce.gremis.gremisng.organization.domain.*;
 import cz.upce.gremis.gremisng.organization.ui.boards.detail.CommitteeFormDialog;
+import cz.upce.gremis.gremisng.organization.ui.committees.CommitteeDetailView;
 import cz.upce.gremis.gremisng.security.SecurityService;
 import cz.upce.gremis.gremisng.ui.AsyncDataCallback;
 import cz.upce.gremis.gremisng.ui.MainLayout;
-import cz.upce.gremis.gremisng.ui.components.EmptyPanel;
-import cz.upce.gremis.gremisng.ui.components.NotificationHelper;
-import cz.upce.gremis.gremisng.ui.components.UiTips;
+import cz.upce.gremis.gremisng.ui.components.*;
 import jakarta.annotation.security.PermitAll;
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import org.vaadin.firitin.components.grid.VGrid;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+
+import static cz.upce.gremis.gremisng.ui.components.SpanHelpers.setupStateSpan;
 
 
 @Route(value = "/boardnew", layout = MainLayout.class)
@@ -53,6 +64,8 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
     private final BoardViewData viewData;
 
     private final H1 title;
+
+    private final Span activeBadge;
 
     private final BoardMenuBar boardMenuBar;
 
@@ -73,7 +86,9 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
         // page top
         title = new H1();
         boardMenuBar = new BoardMenuBar(boardViewLogic);
-        var pageTop = createPageTop(title, boardMenuBar);
+        activeBadge = new Span();
+        activeBadge.addClassName(LumoUtility.Margin.Left.LARGE);
+        var pageTop = createPageTop(title, activeBadge, boardMenuBar);
         add(pageTop);
 
         boardDetail = new BoardDetail(boardViewLogic, viewData);
@@ -129,12 +144,14 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
         }
     }
 
-    private static Component createPageTop(H1 title, BoardMenuBar menuBar) {
+    private static Component createPageTop(H1 title, Span activeBadge, BoardMenuBar menuBar) {
         var pageTop = new HorizontalLayout();
         pageTop.setWidthFull();
         pageTop.setAlignItems(Alignment.CENTER);
 
-        pageTop.addAndExpand(title);
+        pageTop.add(title);
+        pageTop.add(activeBadge);
+        pageTop.addAndExpand(new Div());
         pageTop.add(menuBar);
 
         return pageTop;
@@ -155,7 +172,6 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
     public String getPageTitle() {
         return "Grémium ...";
     }
-
 
     private void setTitle(String title) {
         this.title.setText(title);
@@ -232,9 +248,23 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
                 viewData.save(committee, new UiAsyncDataCallback<>(savedCommittee -> {
                     NotificationHelper.showSuccess("Komise uložena");
                     dialog.close();
+                    fireEvent(new CommitteeAddedEvent(this, committee));
                 }));
             }
         });
+    }
+
+    void setActive(boolean active) {
+        // TODO - disable menus as well
+        if (!active) {
+            boardMenuBar.disableEditing();
+            activeBadge.setText(getTranslation("common.state.disabled"));
+            activeBadge.getElement().getThemeList().add("badge contrast");
+        } else {
+            boardMenuBar.enableEditing();
+            activeBadge.setText(getTranslation("common.state.active"));
+            activeBadge.getElement().getThemeList().add("badge success");
+        }
     }
 
     private class LazyTerms extends Div {
@@ -250,34 +280,50 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
                 configureGrid();
                 grid.setVisible(false);
 
+                emptyListPanel = prepareEmptyPanel();
+
                 var layout = new VerticalLayout();
+                layout.add(emptyListPanel);
                 layout.addAndExpand(grid);
                 add(layout);
 
-                viewData.getTerms(boardId, new AsyncDataCallback<>() {
-                    @Override
-                    public void operationFinished(List<TermDto> data) {
-                        accessUi(() -> {
-                            if (!data.isEmpty()) {
-                                grid.setVisible(true);
-                                grid.setItems(data);
-                                grid.getListDataView()
-                                        .setSortComparator((SerializableComparator<TermDto>) (o1, o2) -> o1.id().compareTo(o2.id()));
-                            } else {
-                                emptyListPanel = new EmptyPanel("Nebyla nalezena žádná funkční období. ", "Přidat funkční období");
-                                add(emptyListPanel);
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void operationFailed(Throwable error) {
-                        accessUi(() -> NotificationHelper.showError(error));
-                    }
-                });
+                loadTerms();
 
                 boardDetail.addSaveListener(e -> update(e.getValue()));
             });
+        }
+
+        private void loadTerms() {
+            viewData.getTerms(boardId, new AsyncDataCallback<>() {
+                @Override
+                public void operationFinished(List<TermDto> data) {
+                    accessUi(() -> {
+                        if (!data.isEmpty()) {
+                            emptyListPanel.setVisible(false);
+                            grid.setVisible(true);
+                            grid.setItems(data);
+                            grid.getListDataView()
+                                    .setSortComparator((SerializableComparator<TermDto>) (o1, o2) -> o1.id().compareTo(o2.id()));
+                        } else {
+                            emptyListPanel.setVisible(true);
+                        }
+                    });
+                }
+
+                @Override
+                public void operationFailed(Throwable error) {
+                    accessUi(() -> NotificationHelper.showError(error));
+                }
+            });
+        }
+
+        private EmptyPanel prepareEmptyPanel() {
+            var emptyListPanel = new EmptyPanel("Nebyla nalezena žádná funkční období. ", "Přidat funkční období");
+            emptyListPanel.addActionClickListener(click ->
+                    boardDetail.openTermDialog(new BoardTerm().setBoard(board), viewData));
+            emptyListPanel.setVisible(false);
+            boardDetail.addSaveListener(event -> setCurrentTerm(event.getValue()));
+            return emptyListPanel;
         }
 
         private void configureGrid() {
@@ -304,6 +350,7 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
         }
 
         public void update(TermDto value) {
+            grid.setVisible(true);
             grid.getListDataView().getItems()
                     .filter(it -> it.id().equals(value.id()))
                     .findFirst()
@@ -394,14 +441,180 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
         }
     }
 
-    private static class LazyCommittees extends Div {
+    private class LazyCommittees extends Div {
+
+        private EmptyPanel emptyListPanel;
+        private Grid<Committee> grid;
+
+        private GridListDataView<Committee> dataView;
+
+        private Committee draggedItem;
+
+        private Div uiTip;
 
         public LazyCommittees() {
             addAttachListener(e -> {
-                log.debug("Seats attached");
-                add(new VerticalLayout(new Span("Committees")));
+                log.debug("Committees attached");
+                var layout = new VerticalLayout();
+                emptyListPanel = prepareEmptyPanel();
+                layout.add(emptyListPanel);
+
+                setupGrid();
+
+                uiTip = UiTips.addTip(layout, "Pořadí funkcí lze změnit přetažením");
+                uiTip.setVisible(false);
+                layout.add(uiTip);
+                layout.add(grid);
+
+                loadData();
+
+                add(layout);
+            });
+
+            BoardView.this.addListener(CommitteeAddedEvent.class, e -> loadData());
+        }
+
+        private void loadData() {
+            BoardView.this.viewData.getCommittees(boardId, new UiAsyncDataCallback<>(committees -> {
+                if (committees.isEmpty()) {
+                    emptyListPanel.setVisible(true);
+                } else {
+                    if (committees.size() > 1) {
+                        uiTip.setVisible(true);
+                    }
+                    var sortedCommittees = committees.stream()
+                            .sorted(Comparator.comparing(Committee::getOrder))
+                            .toList();
+                    dataView = grid.setItems(new ArrayList<>(sortedCommittees));
+                    grid.setVisible(true);
+                }
+            }));
+        }
+
+        private void setupGrid() {
+            grid = new Grid<>();
+            grid.setVisible(false);
+            grid.setSelectionMode(Grid.SelectionMode.NONE);
+            grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
+            grid.addColumn(new ComponentRenderer<>(committee -> new Avatar(String.valueOf(committee.getOrder()))))
+                    .setHeader("Pořadí")
+                    .setTextAlign(ColumnTextAlign.CENTER)
+                    .setWidth("5em")
+                    .setFlexGrow(0)
+                    .setResizable(false);
+            grid.addColumn(createCommitteeRenderer()).setHeader("Název");
+            grid.addColumn(Committee::getMinimumSeats).setHeader("Min. počet členů").setTextAlign(ColumnTextAlign.CENTER);
+            grid.addColumn(Committee::getTermDurationInMonths).setHeader("Doba v měsících").setTextAlign(ColumnTextAlign.CENTER);
+            grid.addColumn(createStatusComponentRenderer()).setHeader("Stav").setFlexGrow(0).setTextAlign(ColumnTextAlign.CENTER);
+            grid.addColumn(
+                    new ComponentRenderer<>(Span::new, (span, committee) -> {
+                        var navigateToDetailButton = createNavigationButton(committee);
+                        span.add(navigateToDetailButton);
+
+                        var removeButton = createRemoveButton(committee);
+                        span.add(removeButton);
+
+                        span.addClassNames(LumoUtility.AlignContent.END);
+                    })).setAutoWidth(true).setFlexGrow(0).setTextAlign(ColumnTextAlign.END);
+
+            //drag & drop
+            grid.setDropMode(GridDropMode.BETWEEN);
+            grid.setRowsDraggable(true);
+            grid.addDragStartListener(dragStartEvent -> draggedItem = dragStartEvent.getDraggedItems().get(0));
+            grid.addDropListener(dragEndEvent -> {
+                GridDropLocation dropLocation = dragEndEvent.getDropLocation();
+                Committee targetItem = dragEndEvent.getDropTargetItem().orElse(null);
+
+                boolean personWasDroppedOntoItself = draggedItem
+                        .equals(targetItem);
+
+                if (targetItem == null || personWasDroppedOntoItself)
+                    return;
+
+                dataView.removeItem(draggedItem);
+
+                if (dropLocation == GridDropLocation.BELOW) {
+                    dataView.addItemAfter(draggedItem, targetItem);
+                } else {
+                    dataView.addItemBefore(draggedItem, targetItem);
+                }
+
+            });
+            grid.addDragEndListener(dragEnd -> {
+                draggedItem = null;
+                if (dataView.getItemCount() > 1) {
+                    var iterator = dataView.getItems().iterator();
+                    var order = 1;
+                    while (iterator.hasNext()) {
+                        var seat = iterator.next();
+                        seat.setOrder(order++);
+                    }
+
+                    BoardView.this.viewData.updateCommittees(boardId, dataView.getItems().toList(),
+                            new UiAsyncDataCallback<>(done -> NotificationHelper.showInfo("Pořadí komisí změněno")));
+                }
             });
         }
+
+        private Button createNavigationButton(Committee committee) {
+            var navigateToDetailButton = new Button();
+            navigateToDetailButton.addThemeVariants(ButtonVariant.LUMO_ICON,
+                    ButtonVariant.LUMO_TERTIARY);
+            navigateToDetailButton.setIcon(new Icon(VaadinIcon.EXTERNAL_LINK));
+            navigateToDetailButton.setTooltipText("Přejít na detail komise");
+            navigateToDetailButton.addClickListener(click ->
+                    getUI().ifPresent(ui -> ui.navigate(CommitteeDetailView.class, committee.getId())));
+            return navigateToDetailButton;
+        }
+
+        private Button createRemoveButton(Committee committee) {
+            var removeButton = new Button();
+            removeButton.addThemeVariants(ButtonVariant.LUMO_ICON,
+                    ButtonVariant.LUMO_ERROR,
+                    ButtonVariant.LUMO_TERTIARY);
+            removeButton.addClickListener(clickEvent -> {
+                var confirmDeleteDialog = new ConfirmDeleteDialog("Opravdu chcete smazat komisi?");
+                confirmDeleteDialog.open();
+                confirmDeleteDialog.addConfirmListener(e -> removeCommittee(committee));
+            });
+            removeButton.setIcon(new Icon(VaadinIcon.TRASH));
+            return removeButton;
+        }
+
+        private void removeCommittee(Committee committee) {
+            viewData.removeCommittee(committee, new UiAsyncDataCallback<>(done -> {
+                dataView.removeItem(committee);
+                var currentItemCount = dataView.getItemCount();
+                if (currentItemCount == 0) {
+                    grid.setVisible(false);
+                    emptyListPanel.setVisible(true);
+                }
+                if (currentItemCount == 1) {
+                    uiTip.setVisible(false);
+                }
+                NotificationHelper.showSuccess("Komise byla smazána");
+            }));
+        }
+
+        @NonNull
+        private static EmptyPanel prepareEmptyPanel() {
+            var emptyPanel = new EmptyPanel("Nebyla nalezena žádná komise. ", "Přidat komisi");
+            emptyPanel.setVisible(false);
+            return emptyPanel;
+        }
+
+        private static Renderer<Committee> createCommitteeRenderer() {
+            return RendererTemplates.createNameAndAbbreviationRenderer(Committee::getName, Committee::getAbbreviation);
+        }
+
+        private static ComponentRenderer<Span, Committee> createStatusComponentRenderer() {
+            return new ComponentRenderer<>(Span::new, statusComponentUpdater);
+        }
+
+        private static final SerializableBiConsumer<Span, Committee> statusComponentUpdater = (span, committee) -> {
+            boolean isActive = committee.isActive();
+            setupStateSpan(span, isActive);
+        };
     }
 
     class UiAsyncDataCallback<T> implements AsyncDataCallback<T>, Serializable {
@@ -422,6 +635,18 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
         public void operationFailed(Throwable error) {
             log.info("Showing error");
             accessUi(() -> NotificationHelper.showError(error)); // Dialog?
+        }
+    }
+
+    // Events
+    @Getter
+    public static class CommitteeAddedEvent extends ComponentEvent<BoardView> {
+
+        private final Committee value;
+
+        CommitteeAddedEvent(BoardView source, Committee value) {
+            super(source, false);
+            this.value = value;
         }
     }
 }

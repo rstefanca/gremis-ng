@@ -231,7 +231,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
 
     private void initTermDialog() {
         boardTermDialog = new BoardTermDialog();
-        boardTermDialog.setOnSave(it -> {
+       /* boardTermDialog.setOnSave(it -> {
             var isNew = it.isNew();
             if (isNew) {
                 addTerm(it);
@@ -241,7 +241,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
             }
 
             Notification.show("Funkční období uloženo");
-        });
+        });*/
     }
 
     @Override
@@ -565,7 +565,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
 
                 layout.add(committeeGrid);
 
-                service.getCommittees(board.getId(), committees -> committeeGrid.setItems(committees.toList()));
+                service.consumeCommittees(board.getId(), committees -> committeeGrid.setItems(committees.toList()));
                 loaded = true;
 
                 add(layout);
@@ -575,7 +575,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
 
         void refresh() {
             if (loaded) {
-                service.getCommittees(board.getId(), committees -> committeeGrid.setItems(committees.toList()));
+                service.consumeCommittees(board.getId(), committees -> committeeGrid.setItems(committees.toList()));
             }
         }
 

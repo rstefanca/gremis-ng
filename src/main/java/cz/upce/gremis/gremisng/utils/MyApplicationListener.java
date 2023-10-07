@@ -45,6 +45,7 @@ class MyApplicationListener
         board.setPerRollamApproveType(PerRollamApproveType.NONE);
         board.setMinMemberCount(3);
         board.setCommitteesEnabled(true);
+        board.setActive(true);
 
         var term1 = new BoardTerm()
                 .setDescription("Funkcni obdobi 2023")

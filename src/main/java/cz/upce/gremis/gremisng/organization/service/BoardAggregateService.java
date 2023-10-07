@@ -21,7 +21,6 @@ public class BoardAggregateService {
     private final BoardRepository repository;
     private final BoardTermRepository boardTermRepository;
 
-
     private final CommitteeRepository committeeRepository;
 
     BoardAggregateService(BoardRepository boardRepository,
@@ -42,6 +41,12 @@ public class BoardAggregateService {
     public void remove(BoardTerm boardTerm) {
        boardTermRepository.delete(boardTerm);
        log.info("Board term removed id={}", boardTerm.getId());
+    }
+
+    @Transactional
+    public void remove(Committee committee) {
+        committeeRepository.delete(committee);
+        log.info("Committee removed id={}", committee.getId());
     }
 
     public void getBoard(Long id, Consumer<Board> consumer) {
@@ -65,8 +70,13 @@ public class BoardAggregateService {
         return saved;
     }
 
-    public void getCommittees(Long boardId, Consumer<Stream<Committee>> onCommittees) {
+    @Deprecated
+    public void consumeCommittees(Long boardId, Consumer<Stream<Committee>> onCommittees) {
         onCommittees.accept(repository.getCommittees(boardId));
+    }
+
+    public List<Committee> getCommittees(Long boardId) {
+        return repository.getCommittees(boardId).toList();
     }
 
     //Cacheable?
@@ -81,6 +91,17 @@ public class BoardAggregateService {
         var orderById = boardSeats.stream().collect(Collectors.toMap(BoardSeat::getId, BoardSeat::getOrder));
 
         board.getSeats().forEach(s -> s.setOrder(orderById.get(s.getId())));
+
+        save(board);
+        log.info("Updated seats - boardId = {}", boardId);
+    }
+
+    @Transactional
+    public void updateCommittees(Long boardId, Collection<Committee> committees) {
+        log.info("Updating committees - boardId = {}", boardId);
+        var board = repository.getReferenceById(boardId);
+        var orderById = committees.stream().collect(Collectors.toMap(Committee::getId, Committee::getOrder));
+        board.getCommittees().forEach(c -> c.setOrder(orderById.get(c.getId())));
 
         save(board);
         log.info("Updated seats - boardId = {}", boardId);

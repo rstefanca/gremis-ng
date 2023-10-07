@@ -33,6 +33,7 @@ public class BoardViewLogic {
         // is there anything to do when we load the page?
 
         refresh(board);
+        view.setActive(board.isActive());
     }
 
     public void edit() {

@@ -16,9 +16,7 @@ public class UiTips {
         icon.addClassNames(LumoUtility.IconSize.SMALL, LumoUtility.TextColor.TERTIARY);
         var textSpan = new Span(text);
         textSpan.addClassNames(LumoUtility.Margin.Left.SMALL, LumoUtility.TextColor.TERTIARY);
-        var div = new Div(
-                icon,
-                textSpan);
+        var div = new Div(icon, textSpan);
         parent.add(div);
         return div;
     }

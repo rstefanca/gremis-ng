@@ -42,8 +42,9 @@ public class BoardTerm extends AbstractEntity implements DateInterval {
     @Getter
     @Setter String description;
 
-    public void setBoard(Board board) {
+    public BoardTerm setBoard(Board board) {
         this.board = board;
+        return this;
     }
 
 

@@ -72,6 +72,14 @@ public class BoardViewData {
     }
 
     @Async
+    public void updateCommittees(Long boardId, Collection<Committee> committees, AsyncDataCallback<Done> callback) {
+        withCallback(callback, () -> {
+            boardAggregateService.updateCommittees(boardId, committees);
+            return Done.INSTANCE;
+        });
+    }
+
+    @Async
     public CompletableFuture<Void> save(Board board) {
         boardAggregateService.save(board);
         return CompletableFuture.completedFuture(null);
@@ -95,16 +103,29 @@ public class BoardViewData {
         withCallback(callback, () -> boardAggregateService.getTerm(termId));
     }
 
+    @Async
+    public void save(Committee committee, AsyncDataCallback<Committee> callback) {
+        withCallback(callback, () -> boardAggregateService.saveCommittee(committee));
+    }
+
+    @Async
+    public void getCommittees(Long boardId, AsyncDataCallback<List<Committee>> callback) {
+        withCallback(callback, () -> boardAggregateService.getCommittees(boardId));
+    }
+
+    @Async
+    public void removeCommittee(Committee committee, AsyncDataCallback<Done> callback) {
+        withCallback(callback, () -> {
+            boardAggregateService.remove(committee);
+            return Done.INSTANCE;
+        });
+    }
+
     private <T> void withCallback(AsyncDataCallback<T> callback, Supplier<T> action) {
         try {
             callback.operationFinished(action.get());
         } catch (RuntimeException ex) {
             callback.operationFailed(ex);
         }
-    }
-    
-    @Async
-    public void save(Committee committee, AsyncDataCallback<Committee> callback) {
-        withCallback(callback, () -> boardAggregateService.saveCommittee(committee));
     }
 }
