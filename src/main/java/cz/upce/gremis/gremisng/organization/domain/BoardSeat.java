@@ -1,12 +1,12 @@
 package cz.upce.gremis.gremisng.organization.domain;
 
-import cz.upce.gremis.gremisng.core.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
 @Table(name = "BOARD_SEAT")
+//@EntityListeners({BoardSeatListener.class})
 public class BoardSeat extends AbstractSeat {
 
     @Id

@@ -19,16 +19,21 @@ import java.util.stream.Stream;
 public class BoardAggregateService {
 
     private final BoardRepository repository;
+
     private final BoardTermRepository boardTermRepository;
 
     private final CommitteeRepository committeeRepository;
 
+    private final BoardSeatRepository boardSeatRepository;
+
     BoardAggregateService(BoardRepository boardRepository,
                           BoardTermRepository boardTermRepository,
-                          CommitteeRepository committeeRepository) {
+                          CommitteeRepository committeeRepository,
+                          BoardSeatRepository boardSeatRepository) {
         this.repository = boardRepository;
         this.boardTermRepository = boardTermRepository;
         this.committeeRepository = committeeRepository;
+        this.boardSeatRepository = boardSeatRepository;
     }
 
     @Transactional
@@ -114,5 +119,21 @@ public class BoardAggregateService {
     @Transactional
     public BoardTerm save(BoardTerm boardTerm) {
         return boardTermRepository.save(boardTerm);
+    }
+
+    @Transactional
+    public BoardSeat save(BoardSeat boardSeat) {
+        log.info("Saving board seat - {}", boardSeat.getName());
+        if (boardSeat.isNew()) {
+            var count = boardSeatRepository.countBoardSeats(boardSeat.getBoard().getId());
+            boardSeat.setOrder(count + 1);
+        }
+        return boardSeatRepository.save(boardSeat);
+    }
+
+    @Transactional
+    public void removeSeat(BoardSeat boardSeat) {
+        log.info("Removing board seat - {}", boardSeat.getId());
+        boardSeatRepository.delete(boardSeat);
     }
 }

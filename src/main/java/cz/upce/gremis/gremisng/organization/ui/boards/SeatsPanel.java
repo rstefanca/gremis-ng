@@ -15,8 +15,6 @@ class SeatsPanel extends VerticalLayout {
 
     private final VerticalLayout formsContainer = new VerticalLayout();
 
-
-
     SeatsPanel() {
         setPadding(false);
         formsContainer.setPadding(false);
@@ -25,7 +23,6 @@ class SeatsPanel extends VerticalLayout {
 
         var formPanel = new FormPanel();
         formsContainer.add(formPanel);
-
     }
 
     Collection<BoardSeat> getItems() {
@@ -132,5 +129,4 @@ class SeatsPanel extends VerticalLayout {
             down.setEnabled(downEnabled);
         }
     }
-
 }

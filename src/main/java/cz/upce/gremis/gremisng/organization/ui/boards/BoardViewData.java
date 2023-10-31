@@ -6,6 +6,7 @@ import cz.upce.gremis.gremisng.organization.service.BoardAggregateService;
 import cz.upce.gremis.gremisng.ui.AsyncDataCallback;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -22,7 +23,7 @@ import static cz.upce.gremis.gremisng.domain.Done.done;
 //TODO decide completable futures or callback
 @Log4j2
 @Component
-public class BoardViewData {
+class BoardViewData {
 
     private final BoardAggregateService boardAggregateService;
 
@@ -30,9 +31,8 @@ public class BoardViewData {
         this.boardAggregateService = boardAggregateService;
     }
 
-    @Async
+    @Async("readOnlyOpsTaskExecutor")
     void getBoard(Long boardId, AsyncDataCallback<Board> callback) {
-        //callback.operationFailed(new RuntimeException("oops"));
         try {
             log.info("Loading board - id: {}", boardId);
             var board = boardAggregateService.getBoard(boardId);
@@ -42,7 +42,7 @@ public class BoardViewData {
         }
     }
 
-    @Async
+    @Async("readOnlyOpsTaskExecutor")
     void getTerms(Long boardId, AsyncDataCallback<List<TermDto>> callback) {
         try {
             log.info("Loading terms - boardId: {}", boardId);
@@ -52,7 +52,7 @@ public class BoardViewData {
         }
     }
 
-    @Async
+    @Async("readOnlyOpsTaskExecutor")
     void getSeats(Long boardId, AsyncDataCallback<List<BoardSeat>> callback) {
         try {
             boardAggregateService.getBoardSeats(boardId, seats -> callback.operationFinished(seats.toList()));
@@ -79,10 +79,8 @@ public class BoardViewData {
         });
     }
 
-    @Async
-    public CompletableFuture<Void> save(Board board) {
-        boardAggregateService.save(board);
-        return CompletableFuture.completedFuture(null);
+    public void save(Board board, AsyncDataCallback<Board> callback) {
+        withCallback(callback, () -> boardAggregateService.save(board));
     }
 
     @Async
@@ -90,15 +88,14 @@ public class BoardViewData {
         return CompletableFuture.completedFuture(boardAggregateService.save(boardTerm));
     }
 
-
-    @Async
+    @Async("readOnlyOpsTaskExecutor")
     public void getCurrentTerm(Long boardId, AsyncDataCallback<Optional<TermDto>> callback) {
         log.info("Getting current term");
         var term = boardAggregateService.getTerms(boardId).stream().findFirst();
         callback.operationFinished(term);
     }
 
-    @Async
+    @Async("readOnlyOpsTaskExecutor")
     public void getTerm(Long termId, AsyncDataCallback<BoardTerm> callback) {
         withCallback(callback, () -> boardAggregateService.getTerm(termId));
     }
@@ -106,6 +103,11 @@ public class BoardViewData {
     @Async
     public void save(Committee committee, AsyncDataCallback<Committee> callback) {
         withCallback(callback, () -> boardAggregateService.saveCommittee(committee));
+    }
+
+    @Async
+    void save(BoardSeat seat, AsyncDataCallback<BoardSeat> callback) {
+        withCallback(callback, () -> boardAggregateService.save(seat));
     }
 
     @Async
@@ -117,6 +119,14 @@ public class BoardViewData {
     public void removeCommittee(Committee committee, AsyncDataCallback<Done> callback) {
         withCallback(callback, () -> {
             boardAggregateService.remove(committee);
+            return Done.INSTANCE;
+        });
+    }
+
+    @Async
+    public void removeSeat(BoardSeat boardSeat, AsyncDataCallback<Done> callback) {
+        withCallback(callback, () -> {
+            boardAggregateService.removeSeat(boardSeat);
             return Done.INSTANCE;
         });
     }

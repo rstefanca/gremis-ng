@@ -2,10 +2,12 @@ package cz.upce.gremis.gremisng.voting.ui;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -16,6 +18,8 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import cz.upce.gremis.gremisng.ui.MainLayout;
+import cz.upce.gremis.gremisng.ui.components.NotificationHelper;
+import cz.upce.gremis.gremisng.ui.utils.BinderUtils;
 import cz.upce.gremis.gremisng.voting.domain.Resolution;
 import cz.upce.gremis.gremisng.voting.domain.Vote;
 import cz.upce.gremis.gremisng.voting.domain.VoteBoard;
@@ -46,12 +50,18 @@ public class NewVotingView extends VerticalLayout implements BeforeEnterObserver
 
     private final PageState state = new PageState();
 
+    private int resolutionsCount;
+
 
     public NewVotingView(VoteAggregateService voteAggregateService) {
         this.voteAggregateService = voteAggregateService;
 
-        setWidthFull();
+        setWidth("500px");
         setSpacing(true);
+
+        var title = new H2("Definice nového hlasování");
+        add(title);
+
         var voteForm = new FormLayout();
 
         voteForm.add(name, 2);
@@ -79,20 +89,27 @@ public class NewVotingView extends VerticalLayout implements BeforeEnterObserver
 
         add(multiFileUpload);
 
-        var resolutionForm = new FormLayout();
-        resolutionForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
+        add(new H3("Usnesení"));
 
-        resolutionForm.add(new TextField("Usnesení"));
-        resolutionForm.add(new TextArea("Poznámka"));
+        add(new ResolutionsPanel(() -> {
+            var resolutionForm = new ResolutionForm();
+            resolutionForm.addStatusChangeListener(e -> {
 
+            });
+            return resolutionForm;
+        }));
 
-        add(resolutionForm);
-        add(new Button("Uložit", e -> save()));
+        var saveButton = new Button("Uložit", e -> save());
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        saveButton.setEnabled(false);
+
+        add(saveButton);
 
         configureBinder();
+        binder.addStatusChangeListener(BinderUtils.createEnableButtonStatusChangeListener(saveButton));
 
         addAttachListener(e -> {
-            add(new Span(state.toString()));
+            //add(new Span(state.toString()));
         });
     }
 
@@ -100,9 +117,6 @@ public class NewVotingView extends VerticalLayout implements BeforeEnterObserver
         binder.forField(name)
                 .asRequired()
                 .bind(Vote::getName, Vote::setName);
-
-       /* binder.forField(start)
-                .bind(Vote::getStartTime, Vote::setStartTime);*/
 
         binder.forField(end)
                 .asRequired()
@@ -141,7 +155,7 @@ public class NewVotingView extends VerticalLayout implements BeforeEnterObserver
             //--------
 
             voteAggregateService.save(vote);
-            Notification.show("Uloženo");
+            NotificationHelper.showSuccess("Uloženo");
             UI.getCurrent().navigate(VoteView.class, vote.getId());
         }
     }

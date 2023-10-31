@@ -10,7 +10,6 @@ public class CommitteeListener  {
 
     private CommitteeRepository committeeRepository;
 
-
     @PrePersist
     public void beforePersist(Committee committee) {
         //update order

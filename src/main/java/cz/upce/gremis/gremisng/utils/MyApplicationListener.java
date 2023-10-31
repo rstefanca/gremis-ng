@@ -95,7 +95,21 @@ class MyApplicationListener
 
 
         boardAggregateService.save(board);
+
+
         boardAggregateService.saveCommittee(committee);
+
+        var committee2 = new Committee()
+                .setName("Vědecká komise")
+                .setAbbreviation("AS_VKO")
+                .setMinimumSeats(3)
+                .setTermDurationInMonths(36)
+                .setMandatory(true);
+        committee2.setActive(false);
+
+        committee2.setBoard(board);
+        committee2.setWorkingGroupsEnabled(true);
+        boardAggregateService.saveCommittee(committee2);
 
 
         var dateInterval = DateInterval.of(LocalDate.of(2023, 1, 1), LocalDate.of(2024, 1, 12));
@@ -125,6 +139,17 @@ class MyApplicationListener
         admin.setSystemRoles(Set.of(systemRole));
 
         personRepository.save(admin);
+
+        var board2 = new Board();
+        board2.setName("Vědecká rada");
+        board2.setAbbreviation("VRA");
+        board2.setTermType(TermType.BOARD);
+        board2.setPerRollamApproveType(PerRollamApproveType.NONE);
+        board2.setMinMemberCount(3);
+        board2.setCommitteesEnabled(true);
+        board2.setActive(true);
+
+        boardAggregateService.save(board2);
     }
 
 }

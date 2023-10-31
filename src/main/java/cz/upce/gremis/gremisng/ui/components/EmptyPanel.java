@@ -10,6 +10,9 @@ public class EmptyPanel extends HorizontalLayout {
 
     private final Button actionButton;
 
+    public EmptyPanel(String buttonText) {
+        this("Nic tu není", buttonText);
+    }
 
     public EmptyPanel(String text, String buttonText) {
         setWidthFull();

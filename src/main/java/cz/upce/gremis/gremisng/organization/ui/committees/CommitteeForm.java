@@ -8,6 +8,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.StatusChangeListener;
 import com.vaadin.flow.shared.Registration;
 import cz.upce.gremis.gremisng.organization.domain.Committee;
 
@@ -52,7 +53,6 @@ public class CommitteeForm extends FormLayout {
         minimumSeats.setValue(1d);
         minimumSeats.setAllowedCharPattern("\\d");
         add(name, abbreviation, duration, minimumSeats, mandatory, workingGroupsEnabled);
-
     }
 
     private void configureBinding() {
@@ -80,6 +80,10 @@ public class CommitteeForm extends FormLayout {
 
     public boolean writeBeanIfValid(Committee committee) {
         return binder.writeBeanIfValid(committee);
+    }
+
+    public void addStatusChangeListener(StatusChangeListener listener) {
+        binder.addStatusChangeListener(listener);
     }
 
     @Deprecated

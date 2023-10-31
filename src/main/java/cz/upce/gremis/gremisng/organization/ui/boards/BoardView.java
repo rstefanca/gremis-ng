@@ -3,7 +3,6 @@ package cz.upce.gremis.gremisng.organization.ui.boards;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
@@ -26,12 +25,10 @@ import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.function.SerializableBiConsumer;
 import com.vaadin.flow.function.SerializableComparator;
 import com.vaadin.flow.function.SerializableConsumer;
-import com.vaadin.flow.router.BeforeEvent;
-import com.vaadin.flow.router.HasDynamicTitle;
-import com.vaadin.flow.router.HasUrlParameter;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import cz.upce.gremis.gremisng.assignments.service.BoardSeatAssignmentService;
 import cz.upce.gremis.gremisng.organization.domain.*;
 import cz.upce.gremis.gremisng.organization.ui.boards.detail.CommitteeFormDialog;
 import cz.upce.gremis.gremisng.organization.ui.committees.CommitteeDetailView;
@@ -39,10 +36,11 @@ import cz.upce.gremis.gremisng.security.SecurityService;
 import cz.upce.gremis.gremisng.ui.AsyncDataCallback;
 import cz.upce.gremis.gremisng.ui.MainLayout;
 import cz.upce.gremis.gremisng.ui.components.*;
+import cz.upce.gremis.gremisng.voting.ui.NewVotingView;
 import jakarta.annotation.security.PermitAll;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.vaadin.firitin.components.grid.VGrid;
 
 import java.io.Serializable;
@@ -65,7 +63,7 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
 
     private final H1 title;
 
-    private final Span activeBadge;
+    private final ActiveBadge activeBadge;
 
     private final BoardMenuBar boardMenuBar;
 
@@ -78,20 +76,26 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
     private Long boardId;
 
     private Long selectedTerm = null;
+    private boolean active = true;
+
+    private final AssignmentDialog assignmentDialog;
 
     BoardView(SecurityService securityService,
-              BoardViewData viewData) {
+              BoardViewData viewData,
+              BoardSeatAssignmentService assignmentService,
+              AssignmentDialog assignmentDialog) {
         this.viewData = viewData;
+        this.assignmentDialog = assignmentDialog;
 
         // page top
         title = new H1();
         boardMenuBar = new BoardMenuBar(boardViewLogic);
-        activeBadge = new Span();
+        activeBadge = new ActiveBadge();
         activeBadge.addClassName(LumoUtility.Margin.Left.LARGE);
         var pageTop = createPageTop(title, activeBadge, boardMenuBar);
         add(pageTop);
 
-        boardDetail = new BoardDetail(boardViewLogic, viewData);
+        boardDetail = new BoardDetail(viewData, assignmentService);
         var lazyTerms = new LazyTerms();
 
 
@@ -158,14 +162,14 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
     }
 
     private TabSheet createTabSheet(BoardDetail boardDetail, LazyTerms lazyTerms) {
-        var tabSheet = new TabSheet();
-        tabSheet.setWidthFull();
-        tabSheet.add("Detail", boardDetail);
-        tabSheet.add("Všechna funkční období", lazyTerms);
-        tabSheet.add("Funkce", new LazySeats());
-        tabSheet.add("Komise", new LazyCommittees());
+        var tabsheet = new TabSheet();
+        tabsheet.setWidthFull();
+        tabsheet.add("Detail", boardDetail);
+        tabsheet.add("Všechna funkční období", lazyTerms);
+        tabsheet.add("Funkce", new LazySeats());
+        tabsheet.add("Komise", new LazyCommittees());
 
-        return tabSheet;
+        return tabsheet;
     }
 
     @Override
@@ -184,16 +188,15 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
         var dialog = new EditBoardDialog();
         dialog.setBoard(board);
         dialog.addOpenedChangeListener(event -> boardViewLogic.updateTitle(event.isOpened()));
-        dialog.addSaveListener(e -> viewData.save(board)
-                .thenAccept(v -> accessUi(() -> {
-                    boardViewLogic.refresh(board);
-                    NotificationHelper.showSuccess("Grémium uloženo");
-                    dialog.close();
-                }))
-                .exceptionally(error -> {
-                    NotificationHelper.showError(error);
-                    return null;
-                })
+        dialog.addSaveListener(e -> {
+                    System.out.println(SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+                    viewData.save(board, new UiAsyncDataCallback<>(saved -> {
+                        boardViewLogic.refresh(saved);
+                        NotificationHelper.showSuccess("Grémium uloženo");
+                        dialog.close();
+                        board = saved;
+                    }));
+                }
         );
 
         dialog.open();
@@ -230,41 +233,75 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
     }
 
     // TODO consider moving and refactoring term dialog
-    public void openTermDialog() {
+    void openTermDialog() {
         var term = new BoardTerm();
         term.setBoard(board);
         boardDetail.openTermDialog(term, this.viewData);
     }
 
-    public void openCommitteeDialog() {
+    void openCommitteeDialog() {
         var committee = new Committee();
+        var dialog = new CommitteeFormDialog(committee, src -> {
+            log.debug("UI: Term dialog save action");
 
-        var dialog = new CommitteeFormDialog(this.boardViewLogic);
-        dialog.open();
-        dialog.setCommittee(committee);
-        dialog.addOnSaveClick(() -> {
-            if (dialog.writeBeanIfValid(committee)) {
                 committee.setBoard(board);
                 viewData.save(committee, new UiAsyncDataCallback<>(savedCommittee -> {
                     NotificationHelper.showSuccess("Komise uložena");
-                    dialog.close();
+                    src.close();
                     fireEvent(new CommitteeAddedEvent(this, committee));
                 }));
-            }
+
         });
+        dialog.open();
+    }
+
+    void openSeatDialog(BoardSeat seat) {
+        var isNew = seat.isNew();
+        var dialog = new SeatDialog(seat, sourceDialog -> {
+            if (isNew) {
+                seat.setBoard(board);
+            }
+            viewData.save(seat, new UiAsyncDataCallback<>(savedSeat -> {
+                sourceDialog.close();
+                NotificationHelper.showSuccess("Funkce uložena");
+                if (isNew) {
+                    fireEvent(new SeatAddedEvent(this, savedSeat));
+                } else {
+                    fireEvent(new SeatModifiedEvent(this, seat));
+                }
+            }));
+        });
+        dialog.open();
+
+        log.debug("UI: Board seat dialog opened");
+    }
+
+    private void openAssignmentDialog(BoardSeat seat) {
+        viewData.getTerm(selectedTerm, new UiAsyncDataCallback<>(term -> {
+            log.debug("UI: Opening assignment dialog");
+            assignmentDialog.open();
+            assignmentDialog.setSelectedTerm(term);
+            assignmentDialog.setSelectedSeat(seat);
+        }));
     }
 
     void setActive(boolean active) {
         // TODO - disable menus as well
         if (!active) {
             boardMenuBar.disableEditing();
-            activeBadge.setText(getTranslation("common.state.disabled"));
-            activeBadge.getElement().getThemeList().add("badge contrast");
+
         } else {
             boardMenuBar.enableEditing();
-            activeBadge.setText(getTranslation("common.state.active"));
-            activeBadge.getElement().getThemeList().add("badge success");
         }
+
+        activeBadge.setActive(active);
+    }
+
+    void navigateToNewVoting() {
+        getUI().ifPresent(ui -> ui.navigate(NewVotingView.class, new RouteParameters(
+                new RouteParam("boardId", board.getId().toString()),
+                new RouteParam("termId", selectedTerm.toString())
+        )));
     }
 
     private class LazyTerms extends Div {
@@ -275,11 +312,8 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
 
         LazyTerms() {
             addAttachListener(attachEvent -> {
-                log.debug("Terms attached");
-
                 configureGrid();
                 grid.setVisible(false);
-
                 emptyListPanel = prepareEmptyPanel();
 
                 var layout = new VerticalLayout();
@@ -290,6 +324,7 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
                 loadTerms();
 
                 boardDetail.addSaveListener(e -> update(e.getValue()));
+                log.debug("UI: Terms attached");
             });
         }
 
@@ -365,23 +400,29 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
 
     private class LazySeats extends Div {
 
+        private VGrid<BoardSeat> grid;
+
         private BoardSeat draggedItem;
         private GridListDataView<BoardSeat> seatsDataView;
+
+        private Div uiTip;
+
+        private EmptyPanel emptyPanel;
+
+        private boolean attached = false;
 
         LazySeats() {
             addAttachListener(e -> {
                 var layout = new VerticalLayout();
+                emptyPanel = prepareEmptyPanel();
+                emptyPanel.addActionClickListener(click -> openSeatDialog(new BoardSeat()));
+                layout.add(emptyPanel);
 
-                var grid = new VGrid<BoardSeat>()
+                grid = new VGrid<BoardSeat>()
                         .withSelectionMode(Grid.SelectionMode.NONE)
                         .withThemeVariants(GridVariant.LUMO_NO_BORDER);
 
-                grid.addColumn(new ComponentRenderer<>(seat -> new Avatar(String.valueOf(seat.getOrder()))))
-                        .setHeader("Pořadí")
-                        .setTextAlign(ColumnTextAlign.CENTER)
-                        .setWidth("5em")
-                        .setFlexGrow(0)
-                        .setResizable(false);
+                GridHelper.createGridOrderColumn(grid, AbstractSeat::getOrder);
 
                 grid.addColumn(BoardSeat::getName).setHeader("Název");
                 grid.addColumn(BoardSeat::getDuration)
@@ -392,6 +433,27 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
                 grid.addColumn(seat -> seat.getSettings().getMinMemberCount())
                         .setTextAlign(ColumnTextAlign.CENTER)
                         .setHeader("Min. počet členů");
+                grid.addColumn(
+                        new ComponentRenderer<>(Span::new, (span, boardSeat) -> {
+                            var addButton = new Button();
+                            addButton.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_TERTIARY);
+                            addButton.setIcon(new Icon(VaadinIcon.PLUS));
+                            addButton.setTooltipText("Přidat osobu");
+                            addButton.addClickListener(click -> openAssignmentDialog(boardSeat));
+                            span.add(addButton);
+
+                            var editButton = createEditButton(boardSeat);
+                            span.add(editButton);
+
+                            var removeButton = createRemoveButton(boardSeat);
+                            span.add(removeButton);
+
+
+                           /* var removeButton = createRemoveButton(committee);
+                            span.add(removeButton);*/
+
+                            span.addClassNames(LumoUtility.AlignContent.END);
+                        })).setAutoWidth(true).setFlexGrow(0).setTextAlign(ColumnTextAlign.END);
 
                 //drag & drop
                 grid.setDropMode(GridDropMode.BETWEEN);
@@ -431,19 +493,75 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
                     }
                 });
 
-                UiTips.addTip(layout, "Pořadí funkcí lze změnit přetažením");
+                uiTip = UiTips.addTip(layout, "Pořadí funkcí lze změnit přetažením");
                 layout.add(grid);
                 add(layout);
-
-                BoardView.this.viewData.getSeats(boardId,
-                        new UiAsyncDataCallback<>(seats -> seatsDataView = grid.setItems(new ArrayList<>(seats))));
+                attached = true;
+                loadData();
             });
+
+            BoardView.this.addListener(SeatAddedEvent.class, e -> loadData());
+            BoardView.this.addListener(SeatModifiedEvent.class, e -> {
+                seatsDataView.refreshItem(e.value);
+
+            });
+        }
+
+        private static EmptyPanel prepareEmptyPanel() {
+            var emptyPanel = new EmptyPanel("Přidat funkci");
+            emptyPanel.setVisible(false);
+            return emptyPanel;
+        }
+
+        private Button createEditButton(BoardSeat boardSeat) {
+            var button = ButtonFactory.createEditIconButton();
+            button.addClickListener(e -> openSeatDialog(boardSeat));
+            return button;
+        }
+
+        private Button createRemoveButton(BoardSeat boardSeat) {
+            var button = ButtonFactory.createDeleteIconButton();
+            button.addClickListener(click -> {
+                var confirmDeleteDialog = new ConfirmDeleteDialog("Opravdu chcete smazat funkci?");
+                confirmDeleteDialog.open();
+                confirmDeleteDialog.addConfirmListener(e -> removeSeat(boardSeat));
+            });
+            return button;
+        }
+
+        private void removeSeat(BoardSeat boardSeat) {
+            viewData.removeSeat(boardSeat, new UiAsyncDataCallback<>(done -> {
+                seatsDataView.removeItem(boardSeat);
+                NotificationHelper.showSuccess("Funkce byla smazána");
+                updatedView();
+            }));
+        }
+
+        private void updatedView() {
+            var itemCount = seatsDataView.getItemCount();
+            var uiTipVisible = itemCount > 1;
+            uiTip.setVisible(uiTipVisible);
+            var hasItems = itemCount > 0;
+            emptyPanel.setVisible(!hasItems);
+            grid.setVisible(hasItems);
+        }
+
+        private void loadData() {
+            if (attached) {
+                log.debug("UI: Loading board seats data");
+                BoardView.this.viewData.getSeats(boardId,
+                        new UiAsyncDataCallback<>(seats -> {
+                            seatsDataView = grid.setItems(new ArrayList<>(seats));
+                            updatedView();
+                        }));
+            }
         }
     }
 
     private class LazyCommittees extends Div {
 
         private EmptyPanel emptyListPanel;
+
         private Grid<Committee> grid;
 
         private GridListDataView<Committee> dataView;
@@ -452,9 +570,10 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
 
         private Div uiTip;
 
+        private boolean attached;
+
         public LazyCommittees() {
             addAttachListener(e -> {
-                log.debug("Committees attached");
                 var layout = new VerticalLayout();
                 emptyListPanel = prepareEmptyPanel();
                 layout.add(emptyListPanel);
@@ -465,30 +584,34 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
                 uiTip.setVisible(false);
                 layout.add(uiTip);
                 layout.add(grid);
-
-                loadData();
-
                 add(layout);
+                attached = true;
+                loadData();
+                log.debug("UI: Committees attached");
             });
 
             BoardView.this.addListener(CommitteeAddedEvent.class, e -> loadData());
         }
 
         private void loadData() {
-            BoardView.this.viewData.getCommittees(boardId, new UiAsyncDataCallback<>(committees -> {
-                if (committees.isEmpty()) {
-                    emptyListPanel.setVisible(true);
-                } else {
-                    if (committees.size() > 1) {
-                        uiTip.setVisible(true);
-                    }
+            if (attached) {
+                BoardView.this.viewData.getCommittees(boardId, new UiAsyncDataCallback<>(committees -> {
                     var sortedCommittees = committees.stream()
                             .sorted(Comparator.comparing(Committee::getOrder))
                             .toList();
                     dataView = grid.setItems(new ArrayList<>(sortedCommittees));
-                    grid.setVisible(true);
-                }
-            }));
+                    updateView();
+                }));
+            }
+        }
+
+        private void updateView() {
+            var itemCount = dataView.getItemCount();
+            var uiTipVisible = itemCount > 1;
+            uiTip.setVisible(uiTipVisible);
+            var hasItems = itemCount > 0;
+            emptyListPanel.setVisible(!hasItems);
+            grid.setVisible(hasItems);
         }
 
         private void setupGrid() {
@@ -496,12 +619,7 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
             grid.setVisible(false);
             grid.setSelectionMode(Grid.SelectionMode.NONE);
             grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
-            grid.addColumn(new ComponentRenderer<>(committee -> new Avatar(String.valueOf(committee.getOrder()))))
-                    .setHeader("Pořadí")
-                    .setTextAlign(ColumnTextAlign.CENTER)
-                    .setWidth("5em")
-                    .setFlexGrow(0)
-                    .setResizable(false);
+            GridHelper.createGridOrderColumn(grid, Committee::getOrder);
             grid.addColumn(createCommitteeRenderer()).setHeader("Název");
             grid.addColumn(Committee::getMinimumSeats).setHeader("Min. počet členů").setTextAlign(ColumnTextAlign.CENTER);
             grid.addColumn(Committee::getTermDurationInMonths).setHeader("Doba v měsících").setTextAlign(ColumnTextAlign.CENTER);
@@ -568,35 +686,23 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
         }
 
         private Button createRemoveButton(Committee committee) {
-            var removeButton = new Button();
-            removeButton.addThemeVariants(ButtonVariant.LUMO_ICON,
-                    ButtonVariant.LUMO_ERROR,
-                    ButtonVariant.LUMO_TERTIARY);
+            var removeButton = ButtonFactory.createDeleteIconButton();
             removeButton.addClickListener(clickEvent -> {
                 var confirmDeleteDialog = new ConfirmDeleteDialog("Opravdu chcete smazat komisi?");
                 confirmDeleteDialog.open();
                 confirmDeleteDialog.addConfirmListener(e -> removeCommittee(committee));
             });
-            removeButton.setIcon(new Icon(VaadinIcon.TRASH));
             return removeButton;
         }
 
         private void removeCommittee(Committee committee) {
             viewData.removeCommittee(committee, new UiAsyncDataCallback<>(done -> {
                 dataView.removeItem(committee);
-                var currentItemCount = dataView.getItemCount();
-                if (currentItemCount == 0) {
-                    grid.setVisible(false);
-                    emptyListPanel.setVisible(true);
-                }
-                if (currentItemCount == 1) {
-                    uiTip.setVisible(false);
-                }
                 NotificationHelper.showSuccess("Komise byla smazána");
+                updateView();
             }));
         }
 
-        @NonNull
         private static EmptyPanel prepareEmptyPanel() {
             var emptyPanel = new EmptyPanel("Nebyla nalezena žádná komise. ", "Přidat komisi");
             emptyPanel.setVisible(false);
@@ -617,7 +723,7 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
         };
     }
 
-    class UiAsyncDataCallback<T> implements AsyncDataCallback<T>, Serializable {
+    private class UiAsyncDataCallback<T> implements AsyncDataCallback<T>, Serializable {
 
         private final SerializableConsumer<T> dataConsumer;
 
@@ -645,6 +751,28 @@ public class BoardView extends VerticalLayout implements HasUrlParameter<Long>, 
         private final Committee value;
 
         CommitteeAddedEvent(BoardView source, Committee value) {
+            super(source, false);
+            this.value = value;
+        }
+    }
+
+    @Getter
+    public static class SeatAddedEvent extends ComponentEvent<BoardView> {
+
+        private final BoardSeat value;
+
+        SeatAddedEvent(BoardView source, BoardSeat value) {
+            super(source, false);
+            this.value = value;
+        }
+    }
+
+    @Getter
+    public static class SeatModifiedEvent extends ComponentEvent<BoardView> {
+
+        private final BoardSeat value;
+
+        SeatModifiedEvent(BoardView source, BoardSeat value) {
             super(source, false);
             this.value = value;
         }

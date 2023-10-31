@@ -29,10 +29,10 @@ public class AuditAttributes {
     private Date changed;
 
     @Column(name = "CREATED_BY", updatable = false)
-    //@CreatedBy
+    @CreatedBy
     private Long createdBy;
 
     @Column(name = "CHANGED_BY")
-    //@LastModifiedBy
+    @LastModifiedBy
     private Long changedBy;
 }

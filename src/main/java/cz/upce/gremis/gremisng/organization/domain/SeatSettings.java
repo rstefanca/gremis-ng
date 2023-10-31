@@ -3,36 +3,33 @@ package cz.upce.gremis.gremisng.organization.domain;
 import cz.upce.gremis.gremisng.common.GremisRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.Setter;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import lombok.*;
 
 @Embeddable
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
 public class SeatSettings {
 
-    //@formatter:off
+    @Enumerated(EnumType.STRING)
     @Column(name = "MANDATORY")
-    private  @Getter @Setter Filling filling; //jak s tim pracovat? pouze pro UI?
+    private Filling filling; //jak s tim pracovat? pouze pro UI?
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "MULTIPLE")
-    private  @Getter @Setter AssignmentType assignmentType;
+    private AssignmentType assignmentType;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "SYSTEM_ROLE")
-    private @Getter @Setter GremisRole grantedRole;
+    private GremisRole grantedRole;
 
     @Column(name = "MINIMUM_MEMBER_COUNT")
-    private @Getter @Setter int minMemberCount;
-
-    //@formatter:on
-
+    private int minMemberCount;
 
     @Override
     public String toString() {
-        return """
-                Settings: [F:%s,T:%s,R:%s]""".formatted(filling, assignmentType, grantedRole);
+        return "Settings: [F:%s,T:%s,R:%s]".formatted(filling, assignmentType, grantedRole);
     }
 }

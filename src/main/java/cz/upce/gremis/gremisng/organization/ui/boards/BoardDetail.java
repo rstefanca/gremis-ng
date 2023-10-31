@@ -3,8 +3,14 @@ package cz.upce.gremis.gremisng.organization.ui.boards;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.grid.dataview.GridLazyDataView;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
@@ -14,8 +20,12 @@ import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.menubar.MenuBarVariant;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
+import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
+import cz.upce.gremis.gremisng.assignments.domain.BoardSeatAssignment;
+import cz.upce.gremis.gremisng.assignments.service.BoardSeatAssignmentService;
 import cz.upce.gremis.gremisng.organization.domain.Board;
 import cz.upce.gremis.gremisng.organization.domain.BoardTerm;
 import cz.upce.gremis.gremisng.organization.domain.TermDto;
@@ -31,8 +41,7 @@ import java.util.List;
 
 class BoardDetail extends VerticalLayout {
 
-
-    private final BoardViewLogic boardViewLogic;
+    private final BoardSeatAssignmentService assignmentService;
 
     private final BoardInfoCard infoCard;
 
@@ -51,9 +60,8 @@ class BoardDetail extends VerticalLayout {
     private Long termId;
     private Board board;
 
-    BoardDetail(BoardViewLogic boardViewLogic, BoardViewData viewData) {
-        this.boardViewLogic = boardViewLogic;
-
+    BoardDetail(BoardViewData viewData, BoardSeatAssignmentService assignmentService) {
+        this.assignmentService = assignmentService;
         infoCard = new BoardInfoCard();
         infoCard.setWidthFull();
 
@@ -88,8 +96,13 @@ class BoardDetail extends VerticalLayout {
 
         // details
         assigneesDetail = new Details("Osoby ve funkcích", new LazyAssigneeDetails());
+        assigneesDetail.setWidthFull();
         votingDetails = new Details("Hlasování", new Span("Hlasování"));
+        votingDetails.setWidthFull();
+
+        //wip
         meetingDetails = new Details("Zasedání", new Span("Zasedání"));
+        meetingDetails.setVisible(false);
 
         add(assigneesDetail, votingDetails, meetingDetails);
 
@@ -187,12 +200,69 @@ class BoardDetail extends VerticalLayout {
 
     private class LazyAssigneeDetails extends Div {
 
+        private Grid<BoardSeatAssignment> grid;
+        private GridLazyDataView<BoardSeatAssignment> lazyDataView;
+
         public LazyAssigneeDetails() {
+            setWidthFull();
             addAttachListener(e -> init());
         }
 
         private void init() {
-            add(new Span("Osoby"));
+            var layout = new VerticalLayout();
+            layout.setPadding(false);
+            layout.setSpacing(false);
+            layout.setWidthFull();
+
+            grid = new Grid<>();
+            grid.setSelectionMode(Grid.SelectionMode.NONE);
+            grid.setPageSize(15);
+            grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
+
+            var firstColumn = grid.addColumn(it -> it.getPerson().getFullName())
+                    .setAutoWidth(true)
+                    .setHeader("Osoba")
+                    .setComparator(it -> it.getPerson().getLastName());
+
+            grid.addColumn(it -> it.getSeat().getName()).setHeader("Funkce v grémiu")
+                    .setSortable(true);
+            grid.addColumn(BoardSeatAssignment::getStart).setHeader("Ve funkci od")
+                    .setSortable(true);
+            grid.addColumn(BoardSeatAssignment::getEnd).setHeader("Ve funkci do");
+
+            grid.addColumn(
+                    new ComponentRenderer<>(Button::new, (button, assignment) -> {
+                        button.addThemeVariants(ButtonVariant.LUMO_ICON,
+                                ButtonVariant.LUMO_ERROR,
+                                ButtonVariant.LUMO_TERTIARY);
+                        button.addClickListener(clickEvent -> {
+                            var confirmDialog = new ConfirmDeleteDialog("Odstranit osobu?");
+                            confirmDialog.addConfirmListener(confirm -> {
+                                this.removeAssignment(assignment);
+                                lazyDataView.refreshAll();
+                                NotificationHelper.showSuccess("Osoba byla smazána");
+                            });
+                            confirmDialog.open();
+                        });
+                        button.setIcon(new Icon(VaadinIcon.TRASH));
+                    })).setWidth("6em").setFlexGrow(0).setTextAlign(ColumnTextAlign.END);
+
+            grid.setMaxHeight("500px");
+
+            lazyDataView = grid.setItems(q -> {
+                // TODO - return dto (flat?) instead of entity
+                var page = assignmentService.findByTermId(termId, VaadinSpringDataHelpers.toSpringPageRequest(q));
+                firstColumn.setFooter(String.format("%s osob", page.getTotalElements()));
+                return page.stream();
+            });
+
+            layout.add(grid);
+
+            add(layout);
+        }
+
+        private void removeAssignment(BoardSeatAssignment assignment) {
+            assignmentService.remove(assignment);
         }
     }
 

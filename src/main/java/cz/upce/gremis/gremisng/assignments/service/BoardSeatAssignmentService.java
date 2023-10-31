@@ -6,6 +6,7 @@ import cz.upce.gremis.gremisng.organization.domain.BoardSeat;
 import cz.upce.gremis.gremisng.organization.domain.BoardTerm;
 import cz.upce.gremis.gremisng.persons.domain.Person;
 import cz.upce.gremis.gremisng.time.DateInterval;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.function.Consumer;
 
+@Log4j2
 @Service
 public class BoardSeatAssignmentService {
 
@@ -63,5 +65,11 @@ public class BoardSeatAssignmentService {
     @Transactional
     public void save(BoardSeatAssignment boardSeatAssignment) {
         repository.save(boardSeatAssignment);
+    }
+
+    @Transactional
+    public void remove(BoardSeatAssignment assignment) {
+        log.info("Removing board seat assignment - id={}", assignment.getId());
+        repository.deleteById(assignment.getId());
     }
 }

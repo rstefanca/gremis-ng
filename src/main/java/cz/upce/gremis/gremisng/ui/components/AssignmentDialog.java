@@ -1,12 +1,10 @@
 package cz.upce.gremis.gremisng.ui.components;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -17,6 +15,7 @@ import cz.upce.gremis.gremisng.organization.domain.BoardSeat;
 import cz.upce.gremis.gremisng.organization.domain.BoardTerm;
 import cz.upce.gremis.gremisng.persons.domain.Person;
 import cz.upce.gremis.gremisng.persons.domain.PersonRepository;
+import cz.upce.gremis.gremisng.ui.utils.BinderUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.PageRequest;
@@ -56,16 +55,17 @@ public class AssignmentDialog extends Dialog {
         var dialogLayout = createDialogLayout();
         add(dialogLayout);
 
-        var cancelButton = Buttons.createCancelButton(e -> {
+        var cancelButton = ButtonFactory.createCancelButton(e -> {
             binder.removeBean();
             binder.refreshFields();
             this.close();
         });
-        cancelButton.getStyle().set("margin-right", "auto");
-        getFooter().add(cancelButton);
 
-        Button saveButton = new Button(getTranslation("buttons.save"), (e) -> this.save());
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        var saveButton = ButtonFactory.createSaveButton(e -> this.save());
+
+        binder.addStatusChangeListener(BinderUtils.createEnableButtonStatusChangeListener(saveButton));
+
+        getFooter().add(cancelButton);
         getFooter().add(saveButton);
     }
 
@@ -130,11 +130,12 @@ public class AssignmentDialog extends Dialog {
         var boardSeatAssignment = new BoardSeatAssignment();
         boardSeatAssignment.setSeat(selectedSeat);
         if (binder.writeBeanIfValid(boardSeatAssignment)) {
+            boardSeatAssignment.setName(selectedSeat.getName());
             service.save(boardSeatAssignment);
             binder.removeBean();
             binder.refreshFields();
             this.close();// launch event?
-            Notification.show("Osoba ulozena");
+            NotificationHelper.showSuccess("Osoba uložena");
         }
     }
 }

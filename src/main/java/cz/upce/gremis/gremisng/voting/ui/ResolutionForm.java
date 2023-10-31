@@ -1,14 +1,14 @@
 package cz.upce.gremis.gremisng.voting.ui;
 
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.StatusChangeListener;
 import cz.upce.gremis.gremisng.voting.domain.Resolution;
 
-public class ResolutionForm extends Div {
-    private final VerticalLayout content;
+public class ResolutionForm extends VerticalLayout {
+
 
     private final TextField text = new TextField("Text usnesení");
 
@@ -17,18 +17,14 @@ public class ResolutionForm extends Div {
     private final Binder<Resolution> binder = new Binder<>(Resolution.class);
 
 
-
     public ResolutionForm() {
-        this.content = new VerticalLayout();
-        content.setWidthFull();
-        add(content);
+        setWidthFull();
+        setPadding(false);
 
         text.setWidth("100%");
-        content.add(text);
-
+        add(text);
         note.setWidth("100%");
-
-        content.add(note);
+        add(note);
 
         binder.forField(text)
                 .asRequired()
@@ -49,5 +45,9 @@ public class ResolutionForm extends Div {
 
     boolean writeIfValid(Resolution resolution) {
         return binder.writeBeanIfValid(resolution);
+    }
+
+    public void addStatusChangeListener(StatusChangeListener listener) {
+        binder.addStatusChangeListener(listener);
     }
 }

@@ -3,7 +3,6 @@ package cz.upce.gremis.gremisng.organization.ui.boards;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -57,8 +56,11 @@ public class NewBoardView extends VerticalLayout {
         termPanel.setEnabled(false);
         var seatsPanel = accordion.add("Funkce", seats);
         seatsPanel.setEnabled(false);
+
+        /*
         var summaryPanel = accordion.add("Shrnutí TODO", new Div());
         summaryPanel.setEnabled(false);
+         */
 
 
         var continueToTerm = new Button(getTranslation("buttons.continue"),
@@ -106,7 +108,7 @@ public class NewBoardView extends VerticalLayout {
             continueToTerm.setEnabled(isValid);
             termPanel.setEnabled(isValid);
             seatsPanel.setEnabled(isValid);
-            summaryPanel.setEnabled(isValid);
+            //summaryPanel.setEnabled(isValid);
             saveButton.setEnabled(isValid);
         });
 
@@ -114,7 +116,7 @@ public class NewBoardView extends VerticalLayout {
             var hasChanges = e.getBinder().hasChanges();
             var isValid = e.getBinder().isValid();
             continueToSeats.setEnabled(isValid && hasChanges);
-            summaryPanel.setEnabled(true);
+            //summaryPanel.setEnabled(true);
             saveButton.setEnabled(isValid && hasChanges);
         });
 

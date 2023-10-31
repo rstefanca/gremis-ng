@@ -26,7 +26,6 @@ class BoardTermForm extends FormLayout {
     private boolean descriptionAlreadyExists;
     private Binder.Binding<BoardTerm, String> descriptionBinder;
 
-
     public BoardTermForm() {
 
         setWidthFull();
@@ -92,6 +91,7 @@ class BoardTermForm extends FormLayout {
     boolean writeBeanIfValid(BoardTerm boardTerm) {
         return binder.writeBeanIfValid(boardTerm);
     }
+
 
     @Deprecated
     BoardTerm getBoardTerm() {

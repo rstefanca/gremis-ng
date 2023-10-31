@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,19 +31,19 @@ class SecurityConfig extends VaadinWebSecurity {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests()
-                .requestMatchers(WHITE_LIST_URLS).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
-                .and().csrf().ignoringRequestMatchers(new AntPathRequestMatcher("/h2-console/**"))
-                .and().headers().frameOptions().sameOrigin();
-
-        http.csrf().disable();
-        http.headers().frameOptions().disable();
+        http.authorizeHttpRequests(auth -> auth.requestMatchers(new AntPathRequestMatcher("/public/**"))
+                .permitAll());
 
         super.configure(http);
 
         setLoginView(http, LoginView.class);
     }
+
+    /*@Override
+    protected void configure(WebSecurity web) throws Exception {
+        // Customize your WebSecurity configuration.
+        super.configure(web);
+    }*/
 
     @Bean
     AuthenticationEventPublisher authenticationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {

@@ -4,17 +4,14 @@ import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.HasValue.ValueChangeListener;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.shared.Registration;
 import cz.upce.gremis.gremisng.organization.domain.BoardTerm;
+import cz.upce.gremis.gremisng.ui.components.ButtonFactory;
 import lombok.Getter;
 
-import java.util.function.Consumer;
-
-
+// TODO use callback instead of the event?
 class BoardTermDialog extends Dialog {
 
     private final BoardTermForm form;
@@ -26,16 +23,21 @@ class BoardTermDialog extends Dialog {
 
         add(form);
 
-        var saveButton = new Button(getTranslation("buttons.save"));
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        var saveButton = ButtonFactory.createSaveButton();
 
         saveButton.addClickListener(e -> fireEvent(new DialogSaveEvent(this, form)));
 
-        getFooter().add(new Button(getTranslation("buttons.cancel"), e -> {
+        getFooter().add(ButtonFactory.createCancelButton(e -> {
             form.clear();
             this.close();
         }));
         getFooter().add(saveButton);
+
+        form.addStatusChangeListener(e -> {
+            var hasChanges = e.getBinder().hasChanges();
+            var isValid = e.getBinder().isValid();
+            saveButton.setEnabled(hasChanges && isValid);
+        });
     }
 
     void readTerm(BoardTerm boardTerm) {

@@ -1,13 +1,15 @@
 plugins {
 	java
-	id("org.springframework.boot") version "3.0.6"
-	id("io.spring.dependency-management") version "1.1.0"
-	id("com.vaadin") version "24.0.5"
+	// spring
+	id("org.springframework.boot") version "3.1.4"
+	id("io.spring.dependency-management") version "1.1.3"
+	// vaadin
+	id("com.vaadin") version "24.1.12"
 }
 
 group = "cz.upce.gremis"
 version = "0.0.1-SNAPSHOT"
-java.sourceCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_21
 
 configurations {
 	compileOnly {
@@ -19,7 +21,13 @@ repositories {
 	mavenCentral()
 }
 
-extra["vaadinVersion"] = "24.0.5"
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+extra["vaadinVersion"] = "24.1.12"
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -31,11 +39,7 @@ dependencies {
 
 	implementation("in.virit:viritin:2.1.1")
 
-	/*<dependency>
-	<groupId>in.virit</groupId>
-	<artifactId>viritin</artifactId>
-	<version>2.1.1</version>
-	</dependency>*/
+
 
 	implementation("org.springframework.boot:spring-boot-starter-mail")
 
@@ -67,3 +71,5 @@ dependencyManagement {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
+// vaadin { productionMode = false }

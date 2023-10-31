@@ -284,12 +284,7 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
         });
 
         var newSeatMenuItem = subMenu.addItem("Funkci");
-        newSeatMenuItem.addClickListener(e -> {
-            if (seatDialog == null) {
-                seatDialog = new SeatDialog();
-            }
-            seatDialog.open();
-        });
+
 
         var newCommitteeMenuItem = subMenu.addItem("Komisi");
         newCommitteeMenuItem.addClickListener(e -> openCommitteeDialog());
@@ -430,13 +425,14 @@ public class BoardDetailView extends VerticalLayout implements HasUrlParameter<L
                         new ComponentRenderer<>(Div::new, (div, boardSeat) -> {
                             var addButton = new Button();
                             addButton.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_TERTIARY);
+                            addButton.setIcon(new Icon(VaadinIcon.PLUS));
+                            addButton.setTooltipText("Přídat osobu");
                             addButton.addClickListener(clickEvent -> {
                                 assignmentDialog.setSelectedTerm(termSelector.getValue());
                                 assignmentDialog.setSelectedSeat(boardSeat);
                                 assignmentDialog.open();
                             });
-                            addButton.setIcon(new Icon(VaadinIcon.PLUS));
-                            addButton.setTooltipText("Přídat osobu");
+
                             div.add(addButton);
 
                             var removeButton = new Button();

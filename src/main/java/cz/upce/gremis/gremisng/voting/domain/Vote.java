@@ -1,5 +1,6 @@
 package cz.upce.gremis.gremisng.voting.domain;
 
+import cz.upce.gremis.gremisng.common.AuditAttributes;
 import cz.upce.gremis.gremisng.core.AbstractEntity;
 import cz.upce.gremis.gremisng.core.EntityCreationListener;
 import jakarta.persistence.*;
@@ -18,6 +19,9 @@ import java.util.Collection;
 @Table(name = "VOTE")
 @EntityListeners({EntityCreationListener.class, AuditingEntityListener.class})
 public class Vote extends AbstractEntity {
+
+    @Embedded
+    private @Getter final AuditAttributes auditAttributes = new AuditAttributes();
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "vote_gen")

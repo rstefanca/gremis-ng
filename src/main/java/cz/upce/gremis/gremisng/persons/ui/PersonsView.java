@@ -22,9 +22,11 @@ import com.vaadin.flow.router.Route;
 import cz.upce.gremis.gremisng.persons.domain.Person;
 import cz.upce.gremis.gremisng.persons.domain.PersonState;
 import cz.upce.gremis.gremisng.ui.MainLayout;
+import jakarta.annotation.security.PermitAll;
 
 
 @Route(value = "users", layout = MainLayout.class)
+@PermitAll
 public class PersonsView extends VerticalLayout {
 
     static final String PERSON_TEMPLATE_EXPRESSION = "<vaadin-horizontal-layout style=\"align-items: center;\" theme=\"spacing\">"
@@ -68,6 +70,7 @@ public class PersonsView extends VerticalLayout {
         grid.setItems(filterDataProvider);
         grid.addItemClickListener(e ->
                 grid.getUI().ifPresent(ui -> ui.navigate(PersonView.class, e.getItem().getId())));
+
 
         VerticalLayout layout = new VerticalLayout(top, grid);
         layout.setPadding(false);

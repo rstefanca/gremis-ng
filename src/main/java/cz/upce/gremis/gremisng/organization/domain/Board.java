@@ -27,7 +27,7 @@ public class Board extends AbstractEntity {
     //formatter:off
     @SuppressWarnings("unused")
     @Embedded
-    private final AuditAttributes auditAttributes = new AuditAttributes();
+    private @Getter final AuditAttributes auditAttributes = new AuditAttributes();
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "board_gen")
@@ -48,6 +48,7 @@ public class Board extends AbstractEntity {
     @NonNull
     @Getter
     @Setter
+    @Enumerated(EnumType.STRING)
     @Column(name = "TERM_TYPE")
     private TermType termType;
 

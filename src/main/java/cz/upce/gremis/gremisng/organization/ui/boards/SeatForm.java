@@ -7,6 +7,7 @@ import com.vaadin.flow.component.radiobutton.RadioGroupVariant;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.StatusChangeListener;
 import cz.upce.gremis.gremisng.common.GremisRole;
 import cz.upce.gremis.gremisng.organization.domain.AssignmentType;
 import cz.upce.gremis.gremisng.organization.domain.BoardSeat;
@@ -14,7 +15,7 @@ import cz.upce.gremis.gremisng.organization.domain.Filling;
 
 public class SeatForm extends FormLayout  {
 
-    private Binder<BoardSeat> binder = new Binder<>(BoardSeat.class);
+    private final Binder<BoardSeat> binder = new Binder<>(BoardSeat.class);
 
     private BoardSeat boardSeat;
 
@@ -81,15 +82,25 @@ public class SeatForm extends FormLayout  {
                 .bind(s -> s.getSettings().getGrantedRole(), (s, value) -> s.getSettings().setGrantedRole(value));
 
         duration.setValue(12d);
-
-
-
     }
 
     BoardSeat getItem() {
         var boardSeat = new BoardSeat();
         binder.writeBeanIfValid(boardSeat);
         return boardSeat;
+    }
+
+    void setItem(BoardSeat seat) {
+        binder.readBean(seat);
+        this.boardSeat = seat;
+    }
+
+    void addStatusChangeListener(StatusChangeListener listener) {
+        binder.addStatusChangeListener(listener);
+    }
+
+    boolean writeBeanIfValid(BoardSeat boardSeat) {
+        return binder.writeBeanIfValid(boardSeat);
     }
 
     void clear() {

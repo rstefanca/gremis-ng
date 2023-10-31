@@ -3,6 +3,7 @@ package cz.upce.gremis.gremisng.organization.ui.boards;
 import com.vaadin.flow.component.UI;
 import cz.upce.gremis.gremisng.common.GremisRole;
 import cz.upce.gremis.gremisng.organization.domain.Board;
+import cz.upce.gremis.gremisng.organization.domain.BoardSeat;
 import cz.upce.gremis.gremisng.organization.domain.TermDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -15,6 +16,8 @@ public class BoardViewLogic {
     private static final String EDIT_PREFIX = "* ";
 
     private final BoardView view;
+
+    private Long boardId;
 
     BoardViewLogic(BoardView view) {
         this.view = view;
@@ -31,6 +34,7 @@ public class BoardViewLogic {
 
     public void enter(Board board) {
         // is there anything to do when we load the page?
+        boardId = board.getId();
 
         refresh(board);
         view.setActive(board.isActive());
@@ -69,7 +73,18 @@ public class BoardViewLogic {
 
     public void addCommittee() {
         view.openCommitteeDialog();
+    }
 
+    void navigateToOldVersion() {
+        UI.getCurrent().navigate(BoardDetailView.class, boardId);
+    }
+
+    public void addSeat() {
+        view.openSeatDialog(new BoardSeat());
+    }
+
+    public void openNewVoting() {
+        view.navigateToNewVoting();
     }
 
     @RequiredArgsConstructor

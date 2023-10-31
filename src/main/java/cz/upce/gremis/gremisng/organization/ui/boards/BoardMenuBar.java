@@ -24,16 +24,25 @@ class BoardMenuBar extends Div {
         edit.addClickListener(e -> viewLogic.edit());
 
         var addMenuItem = menuBar.addItem(new Icon(VaadinIcon.CHEVRON_DOWN));
-        term = addMenuItem.getSubMenu().addItem("Přidat funkční období");
+        var subMenu = addMenuItem.getSubMenu();
 
-        seat = addMenuItem.getSubMenu().addItem("Přidat funkci");
-        committee = addMenuItem.getSubMenu().addItem("Přidat komisi");
-        perRollam = addMenuItem.getSubMenu().addItem("Přidat hlasování");
-        addMenuItem.getSubMenu().add(new Hr());
-        addMenuItem.getSubMenu().addItem("Odstranit");
+        term = subMenu.addItem("Přidat funkční období");
+        seat = subMenu.addItem("Přidat funkci");
+        committee = subMenu.addItem("Přidat komisi");
+        perRollam = subMenu.addItem("Přidat hlasování");
+
+        // Temporary
+        subMenu.add(new Hr());
+        var oldVersion = subMenu.addItem("Stará verze");
+        oldVersion.addClickListener(e -> viewLogic.navigateToOldVersion());
+
+        subMenu.add(new Hr());
+        subMenu.addItem("Odstranit");
 
         term.addClickListener(e -> viewLogic.addTerm());
+        seat.addClickListener(e -> viewLogic.addSeat());
         committee.addClickListener(e -> viewLogic.addCommittee());
+        perRollam.addClickListener(e -> viewLogic.openNewVoting());
 
         add(menuBar);
     }

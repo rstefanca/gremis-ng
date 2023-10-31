@@ -1,6 +1,7 @@
 package cz.upce.gremis.gremisng.organization.ui.boards;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -9,7 +10,17 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import cz.upce.gremis.gremisng.organization.domain.Board;
 import cz.upce.gremis.gremisng.organization.domain.BoardOption;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.Locale;
+
 public class BoardInfoCard extends Div {
+
+    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter
+            .ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.MEDIUM)
+            .withLocale(Locale.of("CS", "CZ"))
+            .withZone(ZoneId.of("Europe/Prague"));
 
     //private final Grid<LabelAndValue> infoGrid;
 
@@ -24,6 +35,8 @@ public class BoardInfoCard extends Div {
     private final Span committees = new Span();
 
     private final Span perRollam = new Span();
+
+    private final Span lastChange = new Span();
 
 
     public BoardInfoCard() {
@@ -42,6 +55,7 @@ public class BoardInfoCard extends Div {
         addRow(verticalLayout, "Typ funkčního období", termType);
         addRow(verticalLayout, "Komise", committees);
         addRow(verticalLayout, "Hlasováni per-rollam", perRollam);
+        addRow(verticalLayout, "Změněno", lastChange);
 
         add(verticalLayout);
     }
@@ -63,12 +77,14 @@ public class BoardInfoCard extends Div {
     }
 
     void setBoard(Board board) {
+
         name.setText(board.getName());
         abbreviation.setText(board.getAbbreviation());
         minMemberCount.setText(board.getMinMemberCount() + "");
         termType.setText(getTranslation("enum.termType." + board.getTermType()));
         committees.setText(renderOptionValue(board, BoardOption.COMMITTEES));
         perRollam.setText(renderOptionValue(board, BoardOption.PER_ROLLAM));
+        lastChange.setText(dateTimeFormatter.format(board.getAuditAttributes().getChanged().toInstant()) + " " + board.getAuditAttributes().getChangedBy());
     }
 
     private static String renderOptionValue(Board board, BoardOption boardOption) {

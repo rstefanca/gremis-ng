@@ -13,9 +13,11 @@ public class ServiceListener implements VaadinServiceInitListener {
     @Override
     public void serviceInit(ServiceInitEvent event) {
         VaadinService vaadinService = event.getSource();
-        vaadinService.addSessionInitListener(initEvent ->
+        vaadinService.addSessionInitListener(e ->
                 log.info("A new Session has been initialized"));
-        vaadinService.addUIInitListener(initEvent ->
+        vaadinService.addUIInitListener(e ->
                 log.info("A new UI has been initialized"));
+        vaadinService.addSessionDestroyListener(e ->
+                log.info("A UI session has been destroyed"));
     }
 }

@@ -1,39 +1,32 @@
 package cz.upce.gremis.gremisng.organization.ui.boards;
 
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.theme.lumo.LumoUtility;
-
+import com.vaadin.flow.function.SerializableConsumer;
+import cz.upce.gremis.gremisng.organization.domain.BoardSeat;
+import cz.upce.gremis.gremisng.ui.utils.BinderUtils;
+import cz.upce.gremis.gremisng.ui.components.ButtonFactory;
 
 class SeatDialog extends Dialog {
 
-    private final SeatForm seatForm;
+    public SeatDialog(BoardSeat seat, SerializableConsumer<Dialog> saveAction) {
+        setHeaderTitle(seat.isNew() ? "Nová funkce" : "Upravit funkci");
+        setCloseOnEsc(true);
+        setCloseOnOutsideClick(false);
 
-    public SeatDialog() {
-        setHeaderTitle("Nová funkce");
+        var seatForm = new SeatForm();
+        seatForm.setItem(seat);
+        add(seatForm);
 
-        var error = new Span("Nelze pridat obdobi");
-        error.setClassName(LumoUtility.Background.ERROR_10);
-        error.getStyle().set("padding", "5px");
-
-
-        seatForm = new SeatForm();
-
-        add(error, seatForm);
-
-        Button saveButton = new Button(getTranslation("buttons.save"), (e) -> {
-            var seat = seatForm.getItem();
+        var saveButton = ButtonFactory.createSaveButton(e -> {
+            if (seatForm.writeBeanIfValid(seat)) {
+               saveAction.accept(this);
+           }
         });
+        saveButton.setEnabled(false);
 
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        saveButton.getStyle().set("margin-right", "auto");
+        getFooter().add(ButtonFactory.createCancelButton(e -> this.close()));
         getFooter().add(saveButton);
 
-        getFooter().add(new Button(getTranslation("buttons.cancel"), e -> {
-            seatForm.clear();
-            this.close();
-        }));
+        seatForm.addStatusChangeListener(BinderUtils.createEnableButtonStatusChangeListener(saveButton));
     }
 }
